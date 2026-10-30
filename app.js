@@ -432,8 +432,19 @@ const canvas = $('map'),
         if (!s.adventure.introSeen) openIntro();
       },
       onError: (e) => {
-        $('loading').textContent =
-          'A grafika nem töltődött be. Nyisd meg internet mellett. ' + e.message;
+        const box = $('loading');
+        const title = document.createElement('strong');
+        title.textContent = 'A grafika betöltése megállt';
+        const reason = document.createElement('p');
+        reason.textContent = e.message;
+        const retry = document.createElement('button');
+        retry.textContent = 'Újrapróbálom';
+        retry.onclick = () => location.reload();
+        const settings = document.createElement('button');
+        settings.textContent = 'Mentés és frissítés';
+        settings.onclick = () => $('settings').click();
+        box.replaceChildren(title, reason, retry, settings);
+        box.style.zIndex = '3';
       },
     },
   );

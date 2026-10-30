@@ -1,4 +1,4 @@
-const CACHE = 'szigetkert-shell-v8-release-4';
+const CACHE = 'szigetkert-shell-v8-release-5';
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'ACTIVATE_UPDATE') self.skipWaiting();
 });
@@ -14,6 +14,13 @@ self.addEventListener('install', (event) =>
         await Promise.all(
           files.slice(i, i + 4).map((file) => cache.add(new Request(file, { cache: 'reload' }))),
         );
+      const description = await (await cache.match('./assets/frames.json')).json();
+      if (
+        !['village', 'nature', 'props', 'expedition'].every(
+          (name) => typeof description[name]?.src === 'string',
+        )
+      )
+        throw Error('Incomplete graphics package: upload the full assets folder.');
       await cache.add('./offline-files.json');
     })(),
   ),
@@ -37,12 +44,15 @@ self.addEventListener('fetch', (event) => {
     return;
   event.respondWith(
     caches
-      .match(event.request)
+      .open(CACHE)
+      .then((cache) => cache.match(event.request))
       .then(
         (cached) =>
           cached ||
           fetch(event.request).catch(() =>
-            event.request.mode === 'navigate' ? caches.match('./index.html') : Response.error(),
+            event.request.mode === 'navigate'
+              ? caches.open(CACHE).then((cache) => cache.match('./index.html'))
+              : Response.error(),
           ),
       ),
   );

@@ -1,9 +1,26 @@
 export const ART_VERSION = 'painted-adventure-2';
+export function validateArtManifest(manifest) {
+  for (const [name, count] of Object.entries({ village: 9, nature: 16, props: 9, expedition: 9 })) {
+    const atlas = manifest?.[name];
+    if (
+      !atlas ||
+      typeof atlas.src !== 'string' ||
+      !Array.isArray(atlas.frames) ||
+      atlas.frames.length < count
+    )
+      throw Error(
+        'Régi vagy hiányos grafikai csomag. Töltsd fel az új assets mappa teljes tartalmát, az assets/frames.json fájllal együtt.',
+      );
+  }
+  return manifest;
+}
 export async function loadArt() {
-  const manifest = await fetch('./assets/frames.json').then((r) => {
-    if (!r.ok) throw Error('Grafikai leírás hiányzik.');
-    return r.json();
-  });
+  const manifest = await fetch('./assets/frames.json')
+    .then((r) => {
+      if (!r.ok) throw Error('Grafikai leírás hiányzik.');
+      return r.json();
+    })
+    .then(validateArtManifest);
   const load = (src) =>
     new Promise((resolve, reject) => {
       const i = new Image();
