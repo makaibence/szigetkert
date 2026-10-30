@@ -1,0 +1,92 @@
+SZIGETKERT – ÁTVIZSGÁLÁS ÉS ELLENŐRZÉS, 2026-10-30
+
+KIINDULÁS
+A meglévő 0.5 projektet vizsgáltam és alakítottam át. Megmaradt a 41×41-es
+világ, a szabályok alapja, az akadálykerülő útkeresés, az érintéskezelés,
+a passzív gazdaság, a küldetések és a régi mentések beolvasása.
+A régi forrásról módosítás előtti helyi másolat készült.
+
+MI OKOZTA AZ ELTÉRÉST?
+A régi kilencelemes atlasz egyszerre szolgálta az épületeket és a növényeket.
+Kevés fafajta és kőforma, egyszínűre ható talaj, ismétlődő virágok, geometriai
+karakter és a köd vetítéséből látszó átlós határvonalak gyengítették a világot.
+A főszereplő közel volt a pálcika-/dobozfigura jelleghez. A gyűjtött objektumok
+nem merültek ki, az épületeknek nem volt grafikától független egyedi azonosítója.
+
+MEGVALÓSÍTOTT VÁLTOZÁS
+Külön természet-, épület- és kezelőfelületi képkészlet, összefüggő festett talaj,
+simított part, sekély víz, hab, tisztás és földutak. Szabad építés előnézettel.
+Új, animált 3D-s szőke férfikarakter; valódi járó- és favágóklip; folyamatos
+irány, akadálykerülés, közeli munkapont. Lágy, tartósan felderített köd.
+A fák/sziklák véges készletet kaptak, ütésre visszajeleznek, kimerülve eltűnnek.
+A kért egyszerűsítés szerint nincs Szigetnapló, készletláda, alsó Térkép vagy
+Készlet gomb. Építés bal alul, Küldetések jobb alul. A beállításokban nincs
+megismételt nyersanyagkijelzés. Meg nem vehető kártyák szürkülnek.
+Három fejlesztési szint, 1–3 dolgozó fatelepenként/bányánként. Valódi
+odaút, munka, rakomány és visszaút. Jóváírás visszatéréskor. Elzárt vagy
+kimerült forrás esetén nem keletkezik fa/kő. Zárt játéknál korlátozott becslés,
+a véges, felfedezett és elérhető készlet tényleges fogyasztásával.
+
+TECHNIKAI DÖNTÉS
+Canvas2D önmagában is alkalmas részletes festett izometrikus világra, de a négy
+karakterkép cserélgetése nem ad hiteles folyamatos fordulást. Ezért hibrid
+megoldás készült: külön adat/logika + festett világ + valódi 3D-s szereplők.
+Nincs indok a mentés és a teljes gazdaság eldobására. A kamera fix maradt.
+Ez 2.5D-s játék, nem teljesen háromdimenziós, szabad kamerás világ.
+
+SZÉTVÁLASZTÁS
+world.js: térkép és stabil természeti azonosítók.
+engine.js: épületek, gazdaság, fejlesztések, jutalmak, sémaellenőrzés.
+workers.js: munkaciklusok és távolléti kitermelés.
+navigation.js / gestures.js: útvonal, fordulás alapadatai, érintések.
+save.js: helyi mentés, régi verziók átvétele, sérült adat védelme.
+art.js / assets/frames.json: cserélhető képkészlet és kivágások.
+terrain-art.js / renderer.js: talaj, köd, mélységi sorrend, effektusok.
+avatar-webgl.js / assets/character: 3D-geometria és animáció.
+updates.js / sw.js / offline-files.json: offline csomag és mentés utáni frissítés.
+
+MENTÉSEK
+A tároló kulcsa a folytonosság miatt változatlan: szigetkert.save.v1.
+A mentés formátuma v3, világverziója 1. v1/v2 átvételkor nem nullázódik a város.
+A mentés épületazonosítót, típust, szintet, helyet és munkásállapotot tárol,
+nem képfájlnevet vagy geometriai részletet. Grafikai csere nem írja át a várost.
+A nyersanyagobjektumok tree:x:y:i / rock:x:y:i azonosítót használnak.
+
+ELLENŐRZÖTT
+Az összes automatizált ellenőrzés átment: gazdaság és 8 órás korlát; érintések;
+hosszú, simított, akadálykerülő út; felderítés; mentésmigráció és biztonsági
+másolat; kimerülés és felszabaduló építési hely; modellek és animációs csontok;
+munkáskör, rakomány megmaradása, elzárt erőforrás, véges offline kitermelés;
+fejlesztési ár/korlát, munkásszám és áthelyezéskor megőrzött szint/azonosító.
+393×852-es böngészős nézetben építés, áthelyezés, kézi gyűjtés, fejlesztés,
+szürkülő kártya, két munkás, mentési export és frissítési folyamat is kipróbálva.
+Az élő exportban v3, második szintű fatelep és két munkás volt; egyikük
+hazafelé tartott 3 fával. A korábbi v2 exportban a kitermelt fa/kiürült szikla
+és az áthelyezett épület állapota is megmaradt.
+Kiszolgáló leállítása melletti újraindításkor a teljes grafika helyben betöltött.
+Asztali böngészőben a kétmunkásos jelenet mért értéke 30 kép/s körül volt.
+Ez nem valódi iPhone 15-ös teljesítménymérés.
+
+KÉPERNYŐKÉPES ÖSSZEVETÉS
+Az összehasonlító HTML és PNG az eredeti referencia első telefonját, a 0.5
+valós játékot és az átdolgozott játék valós kezdőállapotát mutatja. A referencia
+illusztráció, a másik kettő futó játék; a rendszerállapotsáv eltér.
+A városképen tesztcélú importált település látható, nem a játékos mentése.
+
+AMIBEN MÉG NEM ÉRI EL A REFERENCIÁT
+A táj elrendezése még generált, nem gondosan kézzel komponált minden szakasza.
+A referencia folyója, vízesése, hídjai és tájba simuló egyedi útvonalai hiányoznak.
+A 3D-s szereplők anyagai/pózai kevésbé festettek a környezetnél. A szerszám
+kontaktját, a bányászmozgást és a munkások egymást kerülő mozgását tovább kell
+finomítani. A bányászat átvett favágóklipet használ. Még nincs épületszintenként
+változó külső, faültetés/növekedés, teljes lakossági gazdaság, kikötő vagy új sziget.
+Nem állítom, hogy a referencia vizuális minősége teljes egészében teljesült.
+
+KÖVETKEZŐ MINŐSÉGI LÉPÉSEK
+1. Valódi iPhone 15-ön képkockaidő, memória, érintés és offline próba.
+2. Külön bányászklip és pontosabb eszköz–fa/kő kontakt; munkások elkerülése.
+3. Kézzel komponált parti/erdei területek, patak és híd; sűrűség/arányok finomítása.
+4. Faültetés tartós növekedési állapottal, majd szintenként változó épületgrafika.
+5. Csak ezek után nagyobb város, új szigetek és több küldetés.
+
+Az új változat helyi projekt és átadható csomag; GitHub-közzététel nem történt.

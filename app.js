@@ -1,42 +1,571 @@
-import {attachGestures} from './gestures.js';
-import {SIZE,TYPES,RES,fresh,terrain,key,bonus,rates,tick,afford,build,move,frontier,explore,gather,QUESTS,claim,validate} from './engine.js';
-const $=id=>document.getElementById(id),STORE='szigetkert.save.v1';let s,saveOK=true;
-try{const raw=localStorage.getItem(STORE);s=raw?validate(JSON.parse(raw)):fresh()}catch(e){s=fresh();setTimeout(()=>toast('A mentés nem olvasható. Új sziget indult; az előző adatot nem írjuk felül.'),500);saveOK=false}
-const elapsed=tick(s);let selected={x:4,y:5},chosen=null,moving=null,tab='build',sheetOpen=false,camera={zoom:1.65,x:0,y:0},hits=[],toastTimer;let offline=elapsed>60;
-function toast(t){$('toast').textContent=t;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),3500)}
-function save(){if(!saveOK)return;try{localStorage.setItem(STORE,JSON.stringify(s));$('savestatus').textContent='✓ Mentve ezen az eszközön'}catch{$('savestatus').textContent='Mentés sikertelen · exportálj!'}}
-const cost=c=>Object.entries(c).map(([k,v])=>`${RES[k][0]} ${v}`).join('  ');
-let lastQuestState="";
-function render(full=true){const r=rates(s);$('resources').innerHTML=Object.entries(RES).map(([k,[ico,name]])=>`<div class="resource" aria-label="${name}" title="${name}"><span class="ico">${ico}</span><div><b>${Math.floor(s.resources[k])}</b><small>+${(r[k]*60).toFixed(1)}/perc</small></div></div>`).join('');$('discovery').textContent=`${Math.round(s.revealed.length/121*100)}% FELFEDEZVE`;$('questdot').textContent=QUESTS.some(q=>!s.claimed.includes(q.id)&&q.test(s))?'•':'';const qs=QUESTS.map(q=>`${q.test(s)}:${s.claimed.includes(q.id)}`).join();if(full)detail();if(full||qs!==lastQuestState)panel();lastQuestState=qs;draw()}
-function detail(){const {x,y}=selected,t=terrain(x,y),known=s.revealed.includes(key(x,y)),b=s.buildings.find(b=>b.x===x&&b.y===y);let title,text,action='',label='';if(!known){title='Ismeretlen vidék';text='A köd mögött új lehetőségek várnak.';if(frontier(s,x,y)){label='Felfedezés · 🌾 5';action='explore'}else text='Először fedezz fel egy szomszédos mezőt.'}else if(b){title=TYPES[b.type].name;text=`+${(TYPES[b.type].rate*bonus(s,b)*60).toFixed(1)} ${RES[TYPES[b.type].output][1].toLowerCase()}/perc · Bónusz +${Math.round((bonus(s,b)-1)*100)}%`;action='move';label='Áthelyezés'}else if(t==='forest'||t==='mountain'){title=t==='forest'?'Illatos fenyves':'Sziklás magaslat';text='Kézzel gyűjthető, az erőforrás nem fogy el.';action='gather';label=t==='forest'?'+3 fa gyűjtése':'+3 kő gyűjtése'}else if(t==='water'){title='Csendes-öböl';text='Itt csak a hullámok építkeznek.'}else {title=moving!==null?'Új hely az épületnek':chosen?TYPES[chosen].name+' helye':'Egy darabka lehetőség';text='Építkezés lent · válassz egy épületet.';if(moving!==null){action='place';label='Áthelyezés ide'}else if(chosen){action='build';label='Építés';text=cost(TYPES[chosen].cost)}}$('detail').innerHTML=`<div><h3>${title}</h3><p>${text}</p></div>${action?`<button id="action">${label}</button>`:''}`;if(action)$('action').onclick=()=>act(action)}
-function act(a){tick(s);let ok=false;const{x,y}=selected;if(a==='gather')ok=gather(s,x,y);if(a==='explore')ok=explore(s,x,y);if(a==='build')ok=build(s,chosen,x,y);if(a==='move'){moving=s.buildings.findIndex(b=>b.x===x&&b.y===y);chosen=null;toast('Érints egy üres füves mezőt, majd helyezd át.');render();return}if(a==='place'){ok=move(s,moving,x,y);if(ok)moving=null}toast(ok?(a==='explore'?'A köd egy kicsit távolabb húzódott.':a==='gather'?'A készlet gyarapodott!':'A szigeted tovább épül!'):'Ehhez még több erőforrás vagy szabad füves mező kell.');save();render()}
-function panel(){if(tab==='build'){$('panel').innerHTML=`<p class="eyebrow">${moving!==null?'VÁLASSZ SZABAD MEZŐT':'MIT ÉPÍTESZ MA?'}</p><div class="cards">${Object.entries(TYPES).map(([id,t])=>`<button class="card ${chosen===id?'selected':''}" data-build="${id}"><span class="art">${t.icon}</span><b>${t.name}</b><small>${cost(t.cost)}<br>${t.desc}<br>+${(t.rate*60).toFixed(1)} ${RES[t.output][1].toLowerCase()}/p</small></button>`).join('')}</div><p class="hint">Válassz épületet és egy füves mezőt, majd nyomd meg az Építés gombot. A választás után a panel bezárul, és kijelölheted az épület helyét.</p>`;document.querySelectorAll('[data-build]').forEach(b=>b.onclick=()=>{moving=null;chosen=b.dataset.build;setSheet(false);render();toast('Érints egy szabad füves mezőt, majd építs.')})}else if(tab==='quests'){$('panel').innerHTML=QUESTS.map(q=>`<div class="quest ${s.claimed.includes(q.id)?'done':''}"><div><small>${q.kind}</small><br><b>${q.title}</b><p>${q.text}<br>Jutalom: ${cost(q.reward)}</p></div><button data-claim="${q.id}" ${s.claimed.includes(q.id)||!q.test(s)?'disabled':''}>${s.claimed.includes(q.id)?'Kész ✓':q.test(s)?'Átveszem':'Folyamatban'}</button></div>`).join('');document.querySelectorAll('[data-claim]').forEach(b=>b.onclick=()=>{if(claim(s,b.dataset.claim)){save();render();toast('A jutalom a készletedbe került.')}})}else $('panel').innerHTML=`<p class="eyebrow">SZIGETNAPLÓ · ${s.buildings.length} ÉPÜLET</p><h3>Építs okosan, növekedj nyugodtan.</h3><p class="hint">A favágó erdővel, a kőfejtő heggyel közös oldalon +50%-ot termel. A piac a közös oldalon álló termelőknek további +25%-ot ad. Egy bónuszforrás csak egyszer számít, az átlós szomszéd nem számít.</p><p class="hint">A köd szélén egy mező felfedezése 5 élelem. Minden épület azonnal termel. Bezárás után legfeljebb 8 órányi termelést kapsz visszatéréskor. Nincs harc, várakozási díj vagy vásárlás.</p><button id="cancel">Kijelölés megszüntetése</button>`;if($('cancel'))$('cancel').onclick=()=>{moving=null;chosen=null;render()}}
-const canvas=$('map'),ctx=canvas.getContext('2d');let W=0,H=0;
-function poly(pts,fill,stroke){ctx.beginPath();pts.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke()}}
-function draw(){const rect=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,3);if(canvas.width!==Math.round(rect.width*dpr)||canvas.height!==Math.round(rect.height*dpr)){canvas.width=Math.round(rect.width*dpr);canvas.height=Math.round(rect.height*dpr)}W=rect.width;H=rect.height;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);const sea=ctx.createLinearGradient(0,0,W,H);sea.addColorStop(0,'#8dd3dc');sea.addColorStop(1,'#43a8be');ctx.fillStyle=sea;ctx.fillRect(0,0,W,H);const tw=Math.min(W/9,65)*camera.zoom,th=tw*.49,ox=W/2+camera.x,oy=H/2-5*th+camera.y;hits=[];ctx.strokeStyle='#ffffff30';for(let i=0;i<15;i++){let y=(i*39+12)%H;ctx.beginPath();ctx.ellipse((i*127)%W,y,20,3,0,0,7);ctx.stroke()}for(let sum=0;sum<=20;sum++)for(let x=0;x<SIZE;x++){let y=sum-x;if(y<0||y>=SIZE)continue;let px=ox+(x-y)*tw/2,py=oy+(x+y)*th/2;let known=s.revealed.includes(key(x,y)),t=terrain(x,y),edge=frontier(s,x,y),sel=x===selected.x&&y===selected.y;if(t==='water'){if(sel)poly([[px,py-th/2],[px+tw/2,py],[px,py+th/2],[px-tw/2,py]],'#bfe7e7','#fff');hits.push({x,y,px,py,tw,th});continue}let top=[[px,py-th/2],[px+tw/2,py],[px,py+th/2],[px-tw/2,py]];poly([[px-tw/2,py],[px,py+th/2],[px,py+th/2+9],[px-tw/2,py+9]],known?'#c8aa75':'#9ab9b5');poly([[px,py+th/2],[px+tw/2,py],[px+tw/2,py+9],[px,py+th/2+9]],known?'#a78c5e':'#80a4a4');poly(top,known?(t==='mountain'?'#bdc6b2':[[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>terrain(x+dx,y+dy)==='water')?'#e8d49c':(x+y)%2?'#8dc577':'#a0d38a'):edge?'#d0e1d8':'#afccca','#ffffff35');if(sel){ctx.lineWidth=2;poly(top,known?'#fff5b150':'#fff5b130','#fff5bb')}hits.push({x,y,px,py,tw,th});if(!known){if(edge){ctx.fillStyle='#688f89';ctx.font=`${tw*.36}px sans-serif`;ctx.textAlign='center';ctx.fillText('?',px,py+4)}continue}const b=s.buildings.find(b=>b.x===x&&b.y===y);if(b)house(px,py,tw,b.type);else if(t==='forest'){tree(px-tw*.13,py,tw*.55);tree(px+tw*.2,py+tw*.1,tw*.4)}else if(t==='mountain'){poly([[px-tw*.32,py+3],[px+tw*.04,py-tw*.55],[px+tw*.35,py+4]],'#85999a');poly([[px+tw*.04,py-tw*.55],[px+tw*.35,py+4],[px+tw*.03,py]],'#a6b7b0');poly([[px-tw*.08,py-tw*.33],[px+tw*.04,py-tw*.55],[px+tw*.15,py-tw*.32],[px+tw*.03,py-tw*.36]],'#f5f6e6')}else {ctx.strokeStyle='#71a95d';ctx.lineWidth=1.5;for(let i=0;i<3;i++){const gx=px+(i-1)*tw*.14,gy=py+(i%2)*tw*.07;ctx.beginPath();ctx.moveTo(gx-2,gy-3);ctx.lineTo(gx,gy);ctx.lineTo(gx+2,gy-4);ctx.stroke()}if((x+y)%3===0){ctx.fillStyle='#fff0ba';ctx.beginPath();ctx.arc(px+tw*.21,py,tw*.025,0,7);ctx.fill()}}}}
-function shadow(x,y,t){ctx.fillStyle='#244f4826';ctx.beginPath();ctx.ellipse(x+t*.07,y+3,t*.39,t*.12,0,0,Math.PI*2);ctx.fill()}
-function tree(x,y,t){shadow(x,y,t);ctx.fillStyle='#795736';ctx.fillRect(x-t*.055,y-t*.4,t*.11,t*.55);for(let i=0;i<3;i++){let top=y-t*(1.25-i*.25),base=y-t*(.55-i*.24),w=t*(.26+i*.08);poly([[x-w,base],[x,top],[x+w,base]],['#4baf83','#36976f','#278460'][i]);poly([[x,top],[x+w,base],[x,base+t*.07]],['#37936f','#267b5b','#1d6c54'][i]);}}
-function house(x,y,t,type){
- shadow(x,y,t);const a=t*.29,h=t*.45,ground=y+t*.07;
- const colors={hut:['#f9dfae','#e98155'],lumber:['#e1ba83','#36896d'],quarry:['#d4dad0','#7a93a3'],farm:['#ffe5a7','#daa441'],market:['#ffe0ae','#d86661']},[wall,roof]=colors[type];
- if(type==='farm'){poly([[x-t*.4,y],[x,y-t*.17],[x+t*.4,y],[x,y+t*.22]],'#9b7748');for(let i=0;i<5;i++){const offset=(i-2)*t*.12;ctx.strokeStyle=i%2?'#e8c95b':'#94b956';ctx.lineWidth=t*.035;ctx.beginPath();ctx.moveTo(x+offset-t*.17,y);ctx.lineTo(x+offset,y+t*.08);ctx.stroke();}}
- poly([[x-a,y-h],[x,y-h+a*.5],[x,ground],[x-a,ground-a*.5]],wall,'#ba9b7040');poly([[x,y-h+a*.5],[x+a,y-h],[x+a,ground-a*.5],[x,ground]],'#c3ad88');
- poly([[x-a-t*.035,y-h],[x,y-h-a*.72],[x+a+t*.035,y-h],[x,y-h+a*.56]],roof,'#ffffff70');
- poly([[x,y-h-a*.72],[x+a+t*.035,y-h],[x,y-h+a*.56]],type==='lumber'?'#28735e':type==='quarry'?'#587c91':type==='farm'?'#bf8536':'#c5634d');
- for(let i=1;i<4;i++){ctx.strokeStyle='#ffffff30';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x-a+i*a*.26,y-h-i*a*.18);ctx.lineTo(x+i*a*.26,y-h+a*.55-i*a*.18);ctx.stroke();}
- ctx.fillStyle='#586f69';ctx.fillRect(x-a*.68,y-h*.61,a*.34,h*.27);ctx.fillStyle='#ffeeb8';ctx.fillRect(x-a*.62,y-h*.56,a*.2,h*.15);
- poly([[x+a*.28,y-h*.5],[x+a*.62,y-h*.61],[x+a*.62,ground-a*.31],[x+a*.28,ground-a*.14]],'#665744');
- if(type==='hut'){ctx.fillStyle='#e4d3ba';ctx.fillRect(x+a*.36,y-h-a*.62,t*.09,t*.22);ctx.fillStyle='#917768';ctx.fillRect(x+a*.35,y-h-a*.64,t*.12,t*.045);}
- if(type==='lumber'){for(let i=0;i<3;i++){ctx.fillStyle='#8b633b';ctx.fillRect(x-a-t*.08,ground+i*t*.035,t*.25,t*.06);ctx.fillStyle='#dfb77a';ctx.beginPath();ctx.ellipse(x-a+t*.17,ground+i*t*.035+t*.03,t*.028,t*.03,0,0,7);ctx.fill()}}
- if(type==='quarry'){for(let i=0;i<3;i++)poly([[x-a+i*t*.1,ground],[x-a+i*t*.1+t*.05,ground-t*.09],[x-a+i*t*.1+t*.13,ground]],'#94a8a4');}
- if(type==='market'){for(let i=0;i<5;i++){ctx.fillStyle=i%2?'#fff6d7':'#e77566';ctx.fillRect(x-a+i*a*.4,y-h*.61,a*.4,h*.2)}ctx.strokeStyle='#826846';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x-a,y-h*.4);ctx.lineTo(x-a,ground);ctx.stroke();}
+import { loadGame, saveGame, importGame } from './save.js';
+import { setupOffline } from './updates.js';
+import { updateWorkers, produceOfflineWorkers, syncWorkers } from './workers.js';
+import { regionUnlocked } from './world.js';
+import {
+  findPath,
+  smoothPath,
+  revealAround,
+  advanceHero,
+  walkable,
+  resourcePath,
+} from './navigation.js';
+import { createRenderer } from './renderer.js';
+import { attachGestures } from './gestures.js';
+import {
+  SIZE,
+  TYPES,
+  RES,
+  fresh,
+  terrain,
+  key,
+  rates,
+  tick,
+  afford,
+  build,
+  move,
+  frontier,
+  explore,
+  gather,
+  QUESTS,
+  claim,
+  validate,
+  resourceTarget,
+  harvestHit,
+  placement,
+  terrainAt,
+  upgradeCost,
+  upgrade,
+  workerCount,
+  productionMultiplier,
+} from './engine.js';
+const $ = (id) => document.getElementById(id);
+let loadedSave;
+try {
+  loadedSave = loadGame();
+} catch (error) {
+  loadedSave = { state: fresh(), writable: false, error };
 }
-function setSheet(open){sheetOpen=open;$('sheet').hidden=!open;document.querySelectorAll('[data-tab]').forEach(b=>{const active=open&&b.dataset.tab===tab;b.classList.toggle('active',active);b.setAttribute('aria-expanded',String(active));});if(open){$('sheettitle').textContent={build:'Építkezés',quests:'Küldetések',guide:'Szigetnapló'}[tab];panel();}}
-$('closesheet').onclick=()=>setSheet(false);
-attachGestures(canvas,camera,{change:()=>{$('gesturehint').classList.add('dismissed');draw();},tap:({x,y})=>{if(sheetOpen){setSheet(false);return;}const hit=[...hits].reverse().find(h=>Math.abs(x-h.px)/(h.tw/2)+Math.abs(y-h.py)/(h.th/2)<=1);if(hit){selected={x:hit.x,y:hit.y};render();}}});
-$('zoomin').onclick=()=>{camera.zoom=Math.min(3.5,camera.zoom+.25);draw()};$('zoomout').onclick=()=>{camera.zoom=Math.max(.65,camera.zoom-.25);draw()};$('center').onclick=()=>{Object.assign(camera,{zoom:1.65,x:0,y:0});draw()};
-
-document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{const same=tab===b.dataset.tab;tab=b.dataset.tab;setSheet(!sheetOpen||!same)});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')setSheet(false)});
-$('settings').onclick=()=>{$('saveinfo').textContent=`Mentésformátum: v${s.version}. ${saveOK?'Automatikus mentés aktív.':'A sérült mentés védelme miatt az automatikus mentés leállt. Érvényes importtal újraindítható.'}`;$('modal').showModal()};$('close').onclick=()=>$('modal').close();$('export').onclick=()=>{tick(s);const blob=new Blob([JSON.stringify(s,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`szigetkert-${new Date().toISOString().slice(0,10)}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000)};$('import').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{if(f.size>100000)throw Error('Túl nagy mentésfájl.');const candidate=validate(JSON.parse(await f.text()));if(!confirm('Az import lecseréli a jelenlegi szigetedet. Folytatod?'))return;s=candidate;tick(s);saveOK=true;moving=null;chosen=null;save();render();$('modal').close();toast('A szigeted megérkezett.')}catch(err){toast(err.message)}finally{e.target.value=''}};
-window.addEventListener('resize',draw);document.addEventListener('visibilitychange',()=>{tick(s);save();render()});window.addEventListener('pagehide',()=>{tick(s);save()});setInterval(()=>{tick(s);render(false);save()},2000);render();if(offline)setTimeout(()=>toast(`${Math.floor(elapsed/60)} perc távolléti termelés jóváírva.`),500);if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>toast('Az offline módhoz HTTPS vagy localhost szükséges.'));
+let s = loadedSave.state,
+  saveOK = loadedSave.writable;
+if (loadedSave.error)
+  setTimeout(() => toast('A mentés nem olvasható. A régi adatot nem írjuk felül.'), 500);
+const elapsed = tick(s, Date.now(), false);
+produceOfflineWorkers(s, elapsed);
+let previouslyHidden = document.hidden;
+function settle() {
+  const seconds = tick(s, Date.now(), false);
+  if (previouslyHidden) produceOfflineWorkers(s, seconds);
+}
+let selected = null,
+  chosen = null,
+  moving = null,
+  tab = 'build',
+  sheetOpen = false,
+  camera = {
+    zoom: 1.12,
+    x: 0,
+    y: 0,
+    anchorY: 0.53,
+    follow: true,
+    focus: { x: s.hero.x, y: s.hero.y },
+  },
+  hits = [],
+  toastTimer;
+let offline = elapsed > 60;
+let heroPath = [],
+  gatherTarget = null,
+  gatherWait = 0,
+  gatherHits = 0,
+  gatherAmount = 0,
+  nextImpact = 0.17,
+  lastReveal = '';
+const previousExplored = s.explored;
+revealAround(s, s.hero, 2.8);
+s.explored = previousExplored;
+function toast(t) {
+  $('toast').textContent = t;
+  $('toast').classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => $('toast').classList.remove('show'), 3500);
+}
+function save() {
+  if (!saveOK) return false;
+  try {
+    saveGame(s);
+    $('savestatus').textContent = '✓ Mentve ezen az eszközön';
+    return true;
+  } catch {
+    $('savestatus').textContent = 'Mentés sikertelen · exportálj!';
+    return false;
+  }
+}
+const cost = (c) =>
+  Object.entries(c)
+    .map(([k, v]) => `${RES[k][0]} ${v}`)
+    .join('  ');
+let lastQuestState = '';
+let lastAffordState = '';
+function render(full = true) {
+  const recommended =
+    QUESTS.find((q) => q.kind === 'Fő küldetés' && !q.test(s)) || QUESTS.find((q) => !q.test(s));
+  $('nextgoal').textContent = recommended
+    ? 'Következő cél · ' + recommended.text
+    : 'A településed virágzik · nézd meg a jutalmaidat';
+  const r = rates(s);
+  $('resources').innerHTML = Object.entries(RES)
+    .map(
+      ([k, [ico, name]]) =>
+        `<div class="resource" aria-label="${name}" title="${name}"><span class="ico">${ico}</span><div><b>${Intl.NumberFormat('hu', { notation: 'compact', maximumFractionDigits: 1 }).format(Math.floor(s.resources[k]))}</b></div></div>`,
+    )
+    .join('');
+  $('questdot').textContent = QUESTS.some((q) => !s.claimed.includes(q.id) && q.test(s)) ? '•' : '';
+  const qs = QUESTS.map((q) => `${q.test(s)}:${s.claimed.includes(q.id)}`).join();
+  if (full || (selected && !chosen && moving === null)) detail();
+  const affordability = Object.values(TYPES)
+    .map((t) => afford(s, t.cost))
+    .join();
+  if (full || qs !== lastQuestState || affordability !== lastAffordState) panel();
+  lastQuestState = qs;
+  lastAffordState = affordability;
+  draw();
+}
+function detail() {
+  if (!selected) {
+    if (chosen || moving !== null) {
+      $('detail').hidden = false;
+      $('detail').innerHTML =
+        `<div><h3>${chosen ? TYPES[chosen].name + ' elhelyezése' : 'Épület áthelyezése'}</h3><p>Érints egy üres füves helyet.</p></div><button id="dismissdetail" aria-label="Elhelyezés megszakítása">✕</button>`;
+      $('dismissdetail').onclick = () => {
+        chosen = null;
+        moving = null;
+        selected = null;
+        render();
+      };
+    } else $('detail').hidden = true;
+    return;
+  }
+  $('detail').hidden = false;
+  const { x, y } = selected,
+    t = terrainAt(s, x, y),
+    known = s.revealed.includes(key(x, y)),
+    b = s.buildings.find((b) => b.x === x && b.y === y);
+  let title,
+    text,
+    action = '',
+    label = '';
+  if (!known) {
+    title = 'Ismeretlen vidék';
+    text = 'Sétálj ide a felfedezéshez.';
+    if (frontier(s, x, y)) {
+      label = 'Indulok';
+      action = 'explore';
+    } else text = 'Először fedezz fel egy szomszédos mezőt.';
+  } else if (b) {
+    title = TYPES[b.type].name;
+    const count = workerCount(b);
+    text = `${b.level || 1}. szint · ${count ? count + ' munkás · névleg ' : ''}+${(TYPES[b.type].rate * 60 * productionMultiplier(b)).toFixed(1)} ${RES[TYPES[b.type].output][1].toLowerCase()}/perc`;
+    if (count)
+      text += ' · ' + (s.workers.find((w) => w.buildingId === b.id)?.status || 'Munkába állítás');
+    action = 'move';
+    label = 'Áthelyezés';
+  } else if (t === 'forest' || t === 'mountain') {
+    title = t === 'forest' ? 'Illatos fenyves' : 'Sziklás magaslat';
+    text =
+      'Három ütésből legfeljebb 3 nyersanyag. Többször gyűjthető, a készlet kimerülésekor eltűnik.';
+    action = 'gather';
+    label = t === 'forest' ? '+3 fa gyűjtése' : '+3 kő gyűjtése';
+  } else if (t === 'water') {
+    title = 'Csendes-öböl';
+    text = 'Itt csak a hullámok építkeznek.';
+  } else {
+    title =
+      moving !== null
+        ? 'Új hely az épületnek'
+        : chosen
+          ? TYPES[chosen].name + ' helye'
+          : 'Egy darabka lehetőség';
+    text = 'Építkezés lent · válassz egy épületet.';
+    if (moving !== null) {
+      action = 'place';
+      label = 'Áthelyezés ide';
+      text = placement(s, x, y, s.buildings[moving]?.id).reason;
+    } else if (chosen) {
+      action = 'build';
+      label = 'Építés';
+      text = cost(TYPES[chosen].cost) + ' · ' + placement(s, x, y).reason;
+    }
+  }
+  $('detail').innerHTML =
+    `<div><h3>${title}</h3><p>${text}</p></div>${action ? `<button id="action">${label}</button>` : ''}<button id="dismissdetail" aria-label="Kijelölés bezárása">✕</button>`;
+  if (b && moving === null && !chosen) {
+    const price = upgradeCost(b);
+    if (price) {
+      const controls = document.createElement('div');
+      controls.className = 'upgrade-controls';
+      controls.innerHTML = `<small>Következő szint: ${cost(price)}</small><button id="upgrade" ${afford(s, price) ? '' : 'disabled'}>Fejlesztés · ${b.level + 1}. szint</button>`;
+      $('detail').append(controls);
+      $('upgrade').onclick = () => {
+        settle();
+        if (upgrade(s, b.id)) {
+          syncWorkers(s);
+          save();
+          render();
+          toast('Az épület fejlődött.');
+        }
+      };
+    }
+  }
+  $('dismissdetail').onclick = () => {
+    selected = null;
+    chosen = null;
+    moving = null;
+    render();
+  };
+  if (action) $('action').onclick = () => act(action);
+}
+function act(a) {
+  if (!selected) return;
+  settle();
+  let ok = false;
+  const { x, y } = selected;
+  if (a === 'gather') {
+    startWalk({ x, y }, true);
+    return;
+  }
+  if (a === 'explore') {
+    startWalk({ x, y }, false);
+    return;
+  }
+  if (a === 'build') {
+    if (Math.round(s.hero.x) === x && Math.round(s.hero.y) === y) {
+      toast('Ez a hely most a főszereplő alatt van. Válassz másikat.');
+      return;
+    }
+    ok = build(s, chosen, x, y);
+    if (ok) {
+      chosen = null;
+      heroPath = [];
+      gatherTarget = null;
+    }
+  }
+  if (a === 'move') {
+    moving = s.buildings.findIndex((b) => b.x === x && b.y === y);
+    chosen = null;
+    toast('Érints egy üres füves mezőt, majd helyezd át.');
+    render();
+    return;
+  }
+  if (a === 'place') {
+    if (Math.round(s.hero.x) === x && Math.round(s.hero.y) === y) {
+      toast('A főszereplő helyére nem építhetsz.');
+      return;
+    }
+    ok = move(s, moving, x, y);
+    if (ok) moving = null;
+  }
+  toast(
+    ok
+      ? a === 'explore'
+        ? 'A köd egy kicsit távolabb húzódott.'
+        : a === 'gather'
+          ? 'A készlet gyarapodott!'
+          : 'A szigeted tovább épül!'
+      : 'Ehhez még több erőforrás vagy szabad füves mező kell.',
+  );
+  save();
+  render();
+}
+function panel() {
+  if (tab === 'build') {
+    $('panel').innerHTML = `<div class="cards">${Object.entries(TYPES)
+      .map(
+        ([id, t]) =>
+          `<button class="card ${chosen === id ? 'selected' : ''} ${afford(s, t.cost) ? '' : 'unaffordable'}" aria-disabled="${!afford(s, t.cost)}" data-build="${id}"><span class="art art-${id}" aria-hidden="true"></span><b>${t.name}</b><small>${cost(t.cost)}${afford(s, t.cost) ? '' : ' · Kevés nyersanyag'}</small></button>`,
+      )
+      .join(
+        '',
+      )}</div><p class="hint">Válassz épületet, majd érints egy üres helyet. A favágótelep és kőbánya munkásai elérhető, felfedezett nyersanyagot keresnek.</p>`;
+    document.querySelectorAll('[data-build]').forEach(
+      (b) =>
+        (b.onclick = () => {
+          if (!afford(s, TYPES[b.dataset.build].cost)) {
+            toast('Ehhez az épülethez még nincs elég nyersanyagod.');
+            return;
+          }
+          moving = null;
+          chosen = b.dataset.build;
+          setSheet(false);
+          render();
+          toast('Érints egy üres füves helyet.');
+        }),
+    );
+  } else {
+    $('panel').innerHTML = QUESTS.map(
+      (q) =>
+        `<div class="quest ${s.claimed.includes(q.id) ? 'done' : ''}"><div><b>${q.title}</b><p>${q.text}<br>${cost(q.reward)}</p></div><button data-claim="${q.id}" ${s.claimed.includes(q.id) || !q.test(s) ? 'disabled' : ''}>${s.claimed.includes(q.id) ? 'Kész ✓' : q.test(s) ? 'Átveszem' : 'Folyamatban'}</button></div>`,
+    ).join('');
+    document.querySelectorAll('[data-claim]').forEach(
+      (b) =>
+        (b.onclick = () => {
+          if (claim(s, b.dataset.claim)) {
+            save();
+            render();
+            toast('Jutalom átvéve.');
+          }
+        }),
+    );
+  }
+}
+const canvas = $('map');
+const renderer = createRenderer(
+  canvas,
+  () => s,
+  () => selected,
+  camera,
+  {
+    update: updateHero,
+    isMoving: () => heroPath.length > 0,
+    destination: () => heroPath.at(-1),
+    harvestTarget: () => gatherTarget,
+    buildMode: () =>
+      chosen
+        ? { type: chosen }
+        : moving !== null
+          ? { type: s.buildings[moving]?.type, ignoreId: s.buildings[moving]?.id }
+          : null,
+    onReady: () => {
+      $('loading').hidden = true;
+    },
+    onError: (e) => {
+      $('loading').textContent =
+        'A grafika betöltése nem sikerült. Nyisd meg újra internet mellett. ' + e.message;
+    },
+  },
+);
+function draw() {
+  renderer.draw(performance.now());
+}
+function startWalk(target, collect = false) {
+  if (!regionUnlocked(s, target.x, target.y)) {
+    toast('Az északi szigethez előbb építs favágótelepet és kőbányát.');
+    return false;
+  }
+  const node = collect ? resourceTarget(s, target.x, target.y, target.resourceId) : null;
+  if (collect && !node) {
+    toast('Ezt a nyersanyagot már kitermelted.');
+    return false;
+  }
+  const raw = findPath(s, s.hero, { x: Math.round(target.x), y: Math.round(target.y) }),
+    path = node ? resourcePath(s, s.hero, node) : smoothPath(s, s.hero, raw, target.precise);
+  if (!path) {
+    toast('Erre most nincs járható út. Próbálj egy közeli tisztást.');
+    return false;
+  }
+  heroPath = path;
+  gatherTarget = node ? { ...target, resourceId: node.id } : null;
+  gatherWait = 0;
+  gatherHits = 0;
+  gatherAmount = 0;
+  nextImpact = 0.17;
+  camera.follow = true;
+  selected = null;
+  detail();
+  return true;
+}
+function updateHero(dt) {
+  updateWorkers(s, dt);
+  s.hero.action = heroPath.length ? 'walk' : 'idle';
+  if (heroPath.length) s.hero.workTime = 0;
+  if (heroPath.length) {
+    const next = heroPath[0];
+    if (!walkable(s, Math.round(next.x), Math.round(next.y))) {
+      heroPath = [];
+      gatherTarget = null;
+      toast('Az út közben megváltozott. Válassz új célt.');
+    } else advanceHero(s, heroPath, dt);
+  }
+  const cell = key(Math.round(s.hero.x), Math.round(s.hero.y));
+  if (cell !== lastReveal) {
+    lastReveal = cell;
+    const amount = revealAround(s, s.hero, 2.8);
+    if (amount) {
+      panel();
+      save();
+    }
+  }
+  if (!heroPath.length && gatherTarget) {
+    const node = resourceTarget(s, gatherTarget.x, gatherTarget.y, gatherTarget.resourceId);
+    if (!node) {
+      gatherTarget = null;
+      s.hero.action = 'idle';
+    } else {
+      s.hero.action = node.kind === 'wood' ? 'chop' : 'mine';
+      s.hero.targetAngle = Math.atan2(-(node.x - s.hero.x), node.y - s.hero.y);
+      gatherWait += dt;
+      s.hero.workTime = gatherWait;
+      while (gatherTarget && gatherWait >= nextImpact) {
+        const result = harvestHit(s, gatherTarget);
+        if (result.ok) {
+          gatherHits++;
+          gatherAmount += result.amount;
+        }
+        nextImpact += 0.966667;
+        if (!result.ok || result.finished || gatherHits >= 3) {
+          gatherTarget = null;
+          s.hero.action = 'idle';
+          s.hero.workTime = 0;
+          if (result.ok) {
+            save();
+            render(false);
+            toast(`+${gatherAmount} ${RES[result.kind][1].toLowerCase()} a készletben`);
+          }
+        }
+      }
+    }
+  }
+  const desired = Number.isFinite(s.hero.targetAngle) ? s.hero.targetAngle : 0,
+    current = Number.isFinite(s.hero.angle) ? s.hero.angle : desired;
+  const difference = Math.atan2(Math.sin(desired - current), Math.cos(desired - current));
+  s.hero.angle = current + difference * (1 - Math.exp(-dt * 12));
+  if (camera.follow) {
+    const a = 1 - Math.exp(-dt * 6);
+    camera.focus.x += (s.hero.x - camera.focus.x) * a;
+    camera.focus.y += (s.hero.y - camera.focus.y) * a;
+    camera.x *= 1 - a;
+    camera.y *= 1 - a;
+  }
+}
+function setSheet(open) {
+  sheetOpen = open;
+  $('sheet').hidden = !open;
+  document.querySelectorAll('[data-tab]').forEach((b) => {
+    const active = open && b.dataset.tab === tab;
+    b.classList.toggle('active', active);
+    b.setAttribute('aria-expanded', String(active));
+  });
+  if (open) {
+    $('sheettitle').textContent = { build: 'Építkezés', quests: 'Küldetések' }[tab];
+    panel();
+  }
+}
+$('closesheet').onclick = () => setSheet(false);
+attachGestures(canvas, camera, {
+  change: () => {
+    camera.follow = false;
+    draw();
+  },
+  tap: ({ x, y }) => {
+    if (sheetOpen) {
+      setSheet(false);
+      return;
+    }
+    const groundPoint = renderer.worldPoint({ x, y });
+    const hit =
+      chosen || moving !== null
+        ? { x: Math.round(groundPoint.x), y: Math.round(groundPoint.y) }
+        : renderer.hit({ x, y });
+    if (hit && (hit.x < 0 || hit.y < 0 || hit.x >= SIZE || hit.y >= SIZE)) return;
+    if (hit) {
+      const b = s.buildings.find((q) => q.x === hit.x && q.y === hit.y),
+        t = terrainAt(s, hit.x, hit.y);
+      if (chosen || moving !== null) {
+        selected = hit;
+        render();
+        return;
+      }
+      if (b) {
+        selected = hit;
+        render();
+        return;
+      }
+      selected = null;
+      startWalk(
+        { ...hit, precise: t === 'grass' ? renderer.worldPoint({ x, y }) : undefined },
+        t === 'forest' || t === 'mountain',
+      );
+      render();
+    }
+  },
+});
+$('nextgoal').onclick = () => {
+  tab = 'quests';
+  setSheet(true);
+};
+document.querySelectorAll('[data-tab]').forEach(
+  (b) =>
+    (b.onclick = () => {
+      const same = tab === b.dataset.tab;
+      tab = b.dataset.tab;
+      setSheet(!sheetOpen || !same);
+    }),
+);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') setSheet(false);
+});
+function openSettings() {
+  $('saveinfo').textContent =
+    `Játékverzió: 0.7 · Mentés: v${s.version}. ${saveOK ? 'Automatikus mentés aktív.' : 'A sérült mentés védelme miatt az automatikus mentés leállt. Érvényes importtal újraindítható.'}`;
+  $('modal').showModal();
+}
+$('settings').onclick = openSettings;
+$('close').onclick = () => $('modal').close();
+$('export').onclick = () => {
+  settle();
+  const blob = new Blob([JSON.stringify(s, null, 2)], { type: 'application/json' }),
+    url = URL.createObjectURL(blob),
+    a = document.createElement('a');
+  a.href = url;
+  a.download = `szigetkert-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+};
+$('import').onchange = async (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  try {
+    if (f.size > 4000000) throw Error('Túl nagy mentésfájl.');
+    const candidate = importGame(await f.text());
+    if (!confirm('Az import lecseréli a jelenlegi szigetedet. Folytatod?')) return;
+    s = candidate;
+    const seconds = tick(s, Date.now(), false);
+    produceOfflineWorkers(s, seconds);
+    saveOK = true;
+    moving = null;
+    chosen = null;
+    selected = null;
+    heroPath = [];
+    gatherTarget = null;
+    camera.focus = { x: s.hero.x, y: s.hero.y };
+    camera.follow = true;
+    save();
+    render();
+    $('modal').close();
+    toast('A szigeted megérkezett.');
+  } catch (err) {
+    toast(err.message);
+  } finally {
+    e.target.value = '';
+  }
+};
+window.addEventListener('resize', draw);
+document.addEventListener('visibilitychange', () => {
+  settle();
+  previouslyHidden = document.hidden;
+  save();
+  render();
+});
+window.addEventListener('pagehide', () => {
+  settle();
+  save();
+});
+setInterval(() => {
+  if (document.hidden) return;
+  settle();
+  render(false);
+  save();
+}, 2000);
+render();
+if (offline)
+  setTimeout(() => toast(`${Math.floor(elapsed / 60)} perc távolléti termelés jóváírva.`), 500);
+setupOffline({ save, toast });

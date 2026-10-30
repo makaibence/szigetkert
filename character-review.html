@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="hu">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>Karaktervizsgálat · Szigetkert</title
+  ><style>
+    body {
+      margin: 0;
+      background: #243840;
+      color: #f4e5c5;
+      font: 14px system-ui;
+      text-align: center;
+    }
+    h1 {
+      font: 24px Georgia;
+      margin: 20px;
+    }
+    .stage {
+      background: radial-gradient(ellipse at 50% 75%, #c1c397, #738562);
+      max-width: 512px;
+      margin: auto;
+      border-radius: 20px;
+    }
+    canvas {
+      width: 100%;
+      display: block;
+    }
+    button {
+      padding: 12px;
+      background: #ecdfbd;
+      color: #3c4b3b;
+      border: 0;
+      border-radius: 10px;
+      margin: 4px;
+    }
+    label {
+      display: block;
+      margin: 12px;
+    }
+    input {
+      width: 75%;
+    }
+    p {
+      max-width: 500px;
+      margin: 15px auto;
+      font-size: 12px;
+    }
+  </style>
+  <h1>Karaktervizsgálat</h1>
+  <div class="stage" id="stage"></div>
+  <div>
+    <button data-action="idle">Alapállás</button><button data-action="walk">Járás</button
+    ><button data-action="chop">Favágás</button><button data-action="mine">Bányászat</button>
+  </div>
+  <label
+    >Fordulás <input id="angle" type="range" min="-3.14159" max="3.14159" step="0.01" value="0"
+  /></label>
+  <p id="status">Modell betöltése…</p>
+  <script type="module">
+    import { AvatarView } from './avatar-webgl.js';
+    const avatar = new AvatarView();
+    avatar.setResolution(512);
+    document.getElementById('stage').append(avatar.canvas);
+    let action = 'idle',
+      start = performance.now();
+    document.querySelectorAll('[data-action]').forEach(
+      (b) =>
+        (b.onclick = () => {
+          action = b.dataset.action;
+          start = performance.now();
+        }),
+    );
+    await avatar.ready;
+    document.getElementById('status').textContent =
+      'Ruhás férfimodell · három összehangolt csontváz · Idle / Walk / TreeChopping';
+    function frame(now) {
+      avatar.draw(
+        {
+          angle: Number(document.getElementById('angle').value),
+          action,
+          workTime: (now - start) / 1000,
+        },
+        now / 1000,
+      );
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  </script>
+</html>
