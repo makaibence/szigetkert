@@ -72,3 +72,11 @@ A 0.10 külön rárajzolt mozgó mechanikái és kinti kalapáló műhelyemberei
 kikerültek a jelenlegi megjelenítésből. A munkát számláló és folyamatsáv jelzi,
 a készletben is használt anyagikonokkal. A szintváltozatok továbbra is megmaradnak.
 A régi grafikai leírásban szereplő mechanikai mozgás a 0.10 történeti állapotára utal.
+
+
+0.12 HELYSZÍNI JELZÉSEK ÉS PART
+Új grafikai forráskép nem készült. A meglevő roncsot a sekély vízbe helyezi
+a megjelenítés, a logikai interakció a járható parton marad. A parti homokos
+tisztás szélesebb, a közeli növényzetet az érkezési körzetben nem rajzoljuk.
+A szint- és gyártási jelző a saját épület térbeli pontjához kötött, nincs
+képernyőszélhez rögzítés. A köd és a festett atlaszok változatlan alapra épülnek.

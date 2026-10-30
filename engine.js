@@ -2,7 +2,7 @@ import { EXTRA_RES, CRAFT_TYPES } from './content.js';
 import { advanceCrafting, validateProduction } from './production.js';
 import { SIZE, key, terrain, terrainAt, resourcesAt, liveResources } from './world.js';
 export { SIZE, key, terrain, terrainAt, resourcesAt, liveResources };
-export const VERSION = 7,
+export const VERSION = 8,
   CAP = 8 * 3600;
 export const TYPES = {
   ...CRAFT_TYPES,
@@ -104,7 +104,7 @@ export function canUpgradeBuilding(s, b) {
   return (
     !!b &&
     !(
-      s.chapter?.storyRevision === 2 &&
+      s.chapter?.storyRevision >= 2 &&
       b.type === 'sawmill' &&
       b.level === 1 &&
       !s.chapter.completedOrders.includes('house-repair')
@@ -286,7 +286,7 @@ export function claim(s, id) {
 export function validate(input) {
   const s = input,
     n = (n) => Number.isFinite(n) && n >= 0 && n <= 1e15;
-  if (s && [1, 2, 3, 4, 5, 6].includes(s.version) && s.resources)
+  if (s && [1, 2, 3, 4, 5, 6, 7].includes(s.version) && s.resources)
     for (const k of Object.keys(EXTRA_RES)) s.resources[k] ??= 0;
   const coord = (b) =>
     b &&
@@ -298,7 +298,7 @@ export function validate(input) {
     b.y < SIZE;
   if (
     !s ||
-    ![1, 2, 3, 4, 5, 6, 7].includes(s.version) ||
+    ![1, 2, 3, 4, 5, 6, 7, 8].includes(s.version) ||
     !s.resources ||
     !Object.keys(RES).every((k) => n(s.resources[k])) ||
     !Array.isArray(s.buildings) ||

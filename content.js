@@ -267,11 +267,11 @@ export const STORY_ORDERS = {
   'house-repair': {
     site: 'house',
     title: 'Tető a mester feje fölé',
-    text: 'A vihar megbontotta az ács házának tetejét. Deszkát és követ kér; cserébe megjavítja a fűrészműhely sérült szerkezetét.',
+    text: 'A vihar megbontotta az ács házának tetejét. Deszkát és követ kér; cserébe jobb munkapadot és pontos vezetősínt épít a már működő fűrészműhelyedbe.',
     needs: { planks: 3, stone: 8 },
     reward: {},
     benefit:
-      'Az ács megjavítja a fűrészműhelyt: 2. szint, gyorsabb deszkakészítés és új épületváltozat.',
+      'Az ács 2. szintre bővíti a fűrészműhelyt: jobb munkapad, vezetősín és 30%-kal nagyobb kapacitás.',
     restore: 'house',
   },
   'mason-sample': {

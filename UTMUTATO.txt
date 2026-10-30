@@ -1,79 +1,68 @@
-SZIGETKERT 0.11 – EGYSZERŰBB MŰHELYEK ÉS ÉRTHETŐBB FELADATOK
+SZIGETKERT 0.12 – FRISSÍTÉS ÉS HASZNÁLAT
+2026. október 30.
 
-FRISSÍTÉS A TELEFONON HASZNÁLT JÁTÉKHOZ
-1. A régi játékban: Beállítások → Mentés exportálása. Őrizd meg a JSON-fájlt.
-2. Bontsd ki a szigetkert-v11-teljes.zip fájlt, nyisd meg a szigetkert mappát.
-3. GitHub: makaibence/szigetkert → Code → Add file → Upload files.
-4. Finderből húzd be a szigetkert mappa teljes tartalmát, az assets és lib
-   mappával együtt. A Choose your files helyett ezt használd, mert a teljes
-   mappaszerkezetet így lehet egyszerre átvinni. Az index.html a tároló fő
-   szintjére kerüljön. Ne a ZIP-et és ne egy új külső szigetkert mappát tölts fel.
-5. Commit changes. Az azonos nevű fájlokat frissítsd, előtte nem kell törölni őket.
-   Várd meg az Actions oldalon a legújabb közzététel zöld pipáját.
-6. A telefonon a játék beállításaiban: Frissítés keresése, majd a letöltés után
-   Mentés és frissítés. Ellenőrzés: Játékverzió: 0.11, Mentés: v7.
-   Várd meg az „Offline játékra kész.” jelzést. A játékállás megmarad.
+TELEFONON A MEGLÉVŐ JÁTÉK FRISSÍTÉSE
+1. Bontsd ki a szigetkert-v12-teljes.zip fájlt, nyisd meg a benne levő szigetkert mappát.
+2. GitHub: makaibence/szigetkert → Code → Add file → Upload files.
+3. Finderből húzd be a szigetkert mappa TELJES TARTALMÁT, az assets és lib
+   mappákkal együtt. Ne a ZIP-et, és ne a külső szigetkert mappát töltsd fel.
+   Az index.html a tároló fő szintjére kerüljön. A mappákhoz a behúzást használd,
+   mert a Choose your files ablak nem jelöl ki teljes mappákat.
+4. Commit changes. Az azonos nevű fájlokat cseréld; a régieket előtte ne töröld.
+   Az ellenorzes mappát nem kell feltölteni, az a mellékelt képeket tartalmazza.
+5. Az Actions oldalon várd meg a legújabb közzététel zöld pipáját.
+6. A telefonon a játék fogaskerekénél: Frissítés keresése. Ha megjelenik,
+   Mentés és frissítés. Várd meg az „Offline játékra kész.” jelzést.
+   A verzió a lenyitható „Biztonsági mentés és megőrzött játékok” részben
+   ellenőrizhető: Játékverzió 0.12, Mentés v8.
 
 A játék címe: https://makaibence.github.io/szigetkert/
-A már telepített főképernyős ikont nem kell törölnöd. Új telepítésnél:
-Safari → Megosztás → Hozzáadás a Főképernyőhöz.
-Ne töröld a Safari webhelyadatait, mert ott van a helyi mentés.
-A GitHubon közzétett játék nyilvános, a saját játékállásod az eszközödön marad.
-A laptop a telefonos játékhoz a közzététel után nem szükséges.
+A telepített ikont és a Safari webhelyadatait ne töröld. Nem kell új kalandot
+kezdened, mentést importálnod vagy a meglévő szigetet újra felépítened.
+Új telefonos telepítés: Safari → Megosztás → Hozzáadás a Főképernyőhöz.
+Közzététel után a laptop nem kell a telefonos játékhoz.
 
-FELÜLET
-Az alsó Sziget és Feladatok gomb eltűnt, a térkép több helyet kapott.
-A felső „Feladat: …” sorra koppintva nyílnak a feladatok és nyomok.
-A hátizsák és beállítások felül maradtak, az egész csoport lejjebb került.
-Épületre közvetlenül a világban koppints. A neve mellett látszik a szintje,
-kijelöléskor a térképen is. A karakter továbbra is odafut a kiválasztott helyhez.
-Az ismeretlen helyszínek a köd mögött maradnak, a feladatlista nem ad távoli jutalmat.
+MI VÁLTOZOTT
+– A munkások a kanyar előtt befordulnak, nem haladnak háttal a célnak.
+– A zöld értesítések egyenként 5 másodpercig láthatók.
+– A kezdőterület négy további, véges kőlelőhelyet kapott.
+– A leszakadt híd első megvizsgálásakor fehér felső ablak jelenik meg.
+– A felfedezett, működő épületek szintje folyamatosan látszik felettük.
+– A gyártási jelzés kis méretben, a saját épülete felett marad. Nem tapad
+  a képernyő szélére, amikor elmozog a kamera. Képernyőn kívül eltűnik.
+– A csúszka alatt együtt látszik az alapanyag, az eredmény és a becsült
+  elkészülési idő. Folyó munkához hozzáadva annak idejét is beleszámolja.
+  Az idő becslés: az ellátás és a pihenés változása módosíthatja.
+– A termelés közbeni számfrissítés nem építi újra a teljes részletpanelt.
+  A görgetés megmarad, a fejlesztés gomb a panel aljához rögzül.
+– A felső feladatsor és a feladatpanel egy fő célt mutat, a történet sorrendjében.
+  Régi mellékesemények adatai megmaradnak, de nem halmozzák tele a panelt.
+– Új helyszín kiválasztása megszakítja a régi úticélt. Nem indul tovább
+  egy korábban megjelölt kereskedő felé.
+– Az ács nem az első szintet nyitja meg: a már működő fűrészműhelybe jobb
+  munkapadot és vezetősínt készít. A műhely legalább 2. szintű lesz,
+  kapacitása 30%-kal nő. A magasabb, meglévő szinted megmarad.
+  Az ács felújított háza az otthona, a további műhelybővítéseken ő dolgozik.
+– A kezdő homokos part környékéről eltűntek a túl közel álló fák és bokrok,
+  a roncs a sekély vízben látszik. A vizsgálata a partról történik.
+  A kimentett anyagok a helyszíni ablakban azonos készletikonokkal jelennek meg.
 
-GYÁRTÁS CSÚSZKÁVAL
-A fűrészműhelyben és a kőfaragóban eltűntek az 1/3/6 adag gombok.
-A panel megmutatja az átváltást, a készletedet, és egy csúszkával választhatsz.
-Példa: 30 fa → 10 deszka; 15 kő → 5 faragott kő.
-Az alapanyagot a Gyártás indítása gomb megnyomásakor adod át.
-A csúszka mozgatása önmagában semmit nem von le.
-Nincs 12 darabos plafon. Annyit adhatsz be, amennyihez alapanyagod van.
-Folyamatban lévő munkához is adhatsz még anyagot külön megerősítéssel.
-A ház fölötti jelző mutatja az elkészült darabszámot, a még feldolgozandó
-alapanyagot, a hátralévő készterméket és az összesített előrehaladást.
-A késztermék automatikusan a hátizsákba kerül. A műhely munka nélkül nem fogyaszt
-feldolgozási alapanyagot. A már beadott munka bezárás után is folytatható.
-A külön odarajzolt rönk/pengék és a műhely mellett kalapáló emberek eltűntek.
-A munka az épületen belül zajlik. Az erdőben és kőlelőhelyen dolgozó munkások maradtak.
+MENTÉS ÉS BEÁLLÍTÁSOK
+A játék magától ment. A hétköznapi játékhoz nem kell kézzel mentened.
+A fogaskerék továbbra is a frissítéshez és a súgóhoz kell. Az export/import,
+a frissítés előtti másolat és a régi szigetek egy lenyitható részbe kerültek.
+Az export opcionális biztonsági másolat, például telefoncsere vagy véletlen
+böngészőadat-törlés esetére. A helyi automatikus mentés ezeket nem tudja túlélni.
+A v1–v7 mentéseket a játék v8-ra alakítja. Írás előtt a régi mentés teljes,
+nyers példányát külön helyi kulcsban őrzi. A meglevő készletek, épületek,
+fejlesztések, gyártási feladatok és régi szigetek megmaradnak.
+A frissítés nem nullázza a játékot. A ZIP nem tartalmaz személyes játékállást.
+A régi 0.11 teljes csomagot és az átalakítás előtti forrásmásolatot megőriztem.
 
-TÖRTÉNET ÉS FEJLŐDÉS
-A kezdő súgó többé nem árulja el a bázisban található készletet.
-Az egyszeri készlet és a bázis szerepe csak a helyszín megvizsgálásakor derül ki.
-A híd megvizsgálása rövid, kíváncsiságot keltő helyszíni szöveget ad.
-A befejezetlen ácsfeladathoz rövid találkozás kapcsolódik a bázisnál.
-Ha valaki ott vár, a felső feladatsor jelzi. Koppints a házra vagy a vendégre,
-majd válaszd a „Beszélek az áccsal” gombot. Nincs határidő.
-A házának javításáért az ács a fűrészműhely sérült szerkezetét javítja meg.
-A műhely legalább 2. szintű lesz, gyorsabb és az épületképe is megváltozik.
-Ezért a feladatért új teljesítésnél nem jár ezüst. A korábban kapott ezüst megmarad.
-A kereskedő konkrét javításokhoz vásárol tőled anyagot; a panelen előre látod,
-mire kell neki és mennyit fizet. A műhelyek 3. szintű bővítésénél 6 ezüst
-mesterdíj is szerepel. Az alaptelepek fejlesztéséhez továbbra is fa és kő kell.
-A külön „Tartós műhelyfelszerelés” vásárlását kivettem. Korábban megvásárolt
-előnyöd megmarad a mentésben, nem kell újra megvenned.
-Új kalandban a vasérc–faszén–vas lánc későbbre marad. A korábban már
-megszerzett ilyen anyagok, megépített műhelyek és folyamatban lévő munkák megmaradnak.
+HELYI INDÍTÁS
+A szigetkert mappában: python3 serve.py
+Nyisd meg a kiírt helyi webcímet. Ne file:// címről indítsd az index.html-t.
+Tesztek: npm test vagy node test.mjs. Csomagtelepítés nem szükséges.
 
-MENTÉS ÉS MEGLÉVŐ SZIGET
-A frissítéshez nem kell új kalandot kezdened vagy importálnod a mentésedet.
-A v1–v6 mentések v7-re alakíthatók. Az átalakítás előtti nyers mentés külön
-biztonsági másolatba kerül, a beállításokból letölthető.
-A régi 12 elemű sor is megmarad, az alapanyagát nem vonjuk le újra.
-A már teljesített ácsfeladatot nem kell újra végigcsinálnod; a műhely javítása
-ilyenkor is érvényesül, meglévő magasabb szintet nem csökkent.
-A korábbi szigetek között a beállításokban válthatsz. Az export mindet tartalmazza.
-Automatikus mentés, helyi export/import, legfeljebb 8 órás távolléti elszámolás.
-Nincs fiók, kötelező napi belépés, fizetős szolgáltatás vagy új jogosultságigény.
-
-HELYI INDÍTÁS ÉS ELLENŐRZÉS
-A teljes projekt mappájában: python3 serve.py
-A kiírt localhost-címet nyisd meg, ne file:// címről indítsd az index.html-t.
-Tesztek: npm test vagy node test.mjs. Nincs szükség csomagtelepítésre.
+A 393×852 képpontos mobilos böngészőellenőrzés sikeres. Valódi iPhone-on
+az érintésérzetet, a felső sáv távolságát és a teljesítményt te tudod ellenőrizni.

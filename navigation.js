@@ -116,7 +116,7 @@ export function revealAround(s, hero, radius = 3) {
   s.explored += count;
   return count;
 }
-export function advanceHero(s, path, dt, speed = 0.62) {
+export function advanceHero(s, path, dt, speed = 0.62, stopAtCorner = false) {
   let remaining = Math.min(Math.max(dt, 0), 0.15) * speed;
   while (path.length && remaining > 0) {
     const target = path[0],
@@ -131,6 +131,7 @@ export function advanceHero(s, path, dt, speed = 0.62) {
       s.hero.y = target.y;
       remaining -= distance;
       path.shift();
+      if (stopAtCorner) remaining = 0;
     } else {
       s.hero.x += (dx / distance) * remaining;
       s.hero.y += (dy / distance) * remaining;

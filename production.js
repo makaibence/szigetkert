@@ -246,3 +246,33 @@ export function validateProduction(s) {
     )
       throw Error('Hibás műhelydolgozó.');
 }
+
+/** Estimate includes the existing queue, energy and automatic meal breaks. It is not a deadline. */
+export function craftEstimate(s, b, additional = 0) {
+  const recipe = RECIPES[Object.keys(RECIPES).find((k) => RECIPES[k].building === b.type)];
+  if (!recipe) return 0;
+  const crew = s.production?.crews?.[b.id],
+    work =
+      (s.production?.jobs || [])
+        .filter((j) => j.buildingId === b.id)
+        .reduce((n, j) => n + j.remaining + (j.count - 1) * RECIPES[j.recipeId].seconds, 0) +
+      Math.max(0, additional) * recipe.seconds;
+  if (!work) return 0;
+  const fed = s.resources.food >= 2,
+    rest = fed ? 20 : 40,
+    cycle = fed ? 102 : 48,
+    meanEnergy = fed ? 57.5 : 35;
+  const efficiency = workerEfficiency(s, { energy: meanEnergy }),
+    active = work / (craftSpeed(s, b) * efficiency);
+  const first = crew?.recovery ? cycle : Math.max(0, ((crew?.energy ?? 100) - 15) * 1.2);
+  return Math.ceil(
+    active + (Math.max(0, active - first) * rest) / cycle + (crew?.recovery?.remaining || 0),
+  );
+}
+export function durationText(seconds) {
+  const n = Math.max(0, Math.ceil(seconds / 5) * 5),
+    h = Math.floor(n / 3600),
+    m = Math.floor((n % 3600) / 60),
+    sec = n % 60;
+  return h ? `${h} ó ${m} p` : m ? `${m} p ${sec ? sec + ' mp' : ''}`.trim() : `${n} mp`;
+}

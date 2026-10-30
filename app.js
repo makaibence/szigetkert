@@ -1,5 +1,13 @@
+import { patchMarkup } from './dom-patch.js';
 import { RECIPES } from './content.js';
-import { queueCraft, craftSpeed, craftLimit, productionProgress } from './production.js';
+import {
+  queueCraft,
+  craftSpeed,
+  craftLimit,
+  productionProgress,
+  craftEstimate,
+  durationText,
+} from './production.js';
 import {
   activeOrder,
   deliverOrder,
@@ -7,6 +15,7 @@ import {
   ensureMerchant,
   carpenterWaiting,
   introduceCarpenter,
+  currentTask,
 } from './chapter.js';
 import { materialIcon, materialAmounts, iconSource } from './ui-icons.js';
 import { siteReadiness, readySites } from './site-actions.js';
@@ -41,6 +50,7 @@ import {
 import { updateWorkers, produceOfflineWorkers, syncWorkers, supplyFactor } from './workers.js';
 import {
   freshAdventure,
+  WRECK_SUPPLIES,
   switchCampaign,
   startFreshAdventure,
   knownSite,
@@ -111,10 +121,7 @@ function nextToast() {
   currentToast = entry;
   $('toast').textContent = entry;
   $('toast').classList.add('show');
-  toastTimer = setTimeout(
-    nextToast,
-    Math.min(14000, Math.max(9000, entry.split(' ').length * 350)),
-  );
+  toastTimer = setTimeout(nextToast, 5000);
 }
 function toast(text) {
   if (text === currentToast || toastQueue.includes(text)) return;
@@ -211,42 +218,13 @@ function renderPanel() {
     );
     return;
   }
-  if (sheet === 'sites') {
-    const sites = s.adventure.sites
-      .filter((p) => knownSite(s, p))
-      .sort((a, b) => Number(!!siteReadiness(s, b)) - Number(!!siteReadiness(s, a)));
+  if (sheet === 'quests') {
+    const task = currentTask(s);
     $('panel').innerHTML =
-      `<p class="hint">${s.resources.food < 2 && s.workers.length ? 'Kevés az élelem. A következő étkezésekhez utánpótlás kell.' : supplySummary(s).level < 70 ? 'Az ellátottság a sikeres étkezésekkel fokozatosan helyreáll.' : 'A megtalált helyszíneket vizsgálhatod meg, majd helyreállíthatod.'}</p><div class="site-list">${sites.map((p) => `<button data-site="${escape(p.id)}">${siteThumbnail(p)}<span><b>${escape(p.name)}</b><small>${siteReadiness(s, p) || (p.kind === 'forage' ? 'Gyűjtögethető' : p.restored ? 'Működik' : p.salvaged ? 'Átvizsgálva' : p.inspected ? 'Helyreállításra vár' : 'Megvizsgálható')}</small></span></button>`).join('')}</div>`;
-    if (
-      s.adventure.trader?.active &&
-      s.revealed.includes(key(s.adventure.trader.x, s.adventure.trader.y))
-    ) {
-      const button = document.createElement('button');
-      button.className = 'event-card';
-      button.textContent = 'Vándorkereskedő · Ajánlatok és útbaigazítás';
-      button.onclick = () => {
-        closeSheet();
-        approachEncounter('trader');
-      };
-      $('panel').append(button);
-    }
-    document.querySelectorAll('[data-site]').forEach(
-      (b) =>
-        (b.onclick = () => {
-          closeSheet();
-          selectSite(b.dataset.site);
-        }),
-    );
-  } else {
-    const e = eventView(s),
-      orders = s.adventure.sites
-        .filter((p) => p.inspected)
-        .map((p) => activeOrder(s, p.id))
-        .filter(Boolean);
-    $('panel').innerHTML =
-      `<article class="quest-story"><b>Következő lépés</b><p>${escape(objective(s))}</p></article>${orders.map((o) => `<article class="quest-story"><b>${escape(o.title)}</b><p>${escape(o.text)}</p>${materialAmounts(o.needs, renderer, { available: s.resources })}<small>${escape(o.benefit || 'A kereskedő fizet:')} ${materialAmounts(o.reward, renderer)}</small><p class="hint">Az anyagcsomagot a helyszínen adhatod át.</p></article>`).join('')}${e ? `<article class="quest-story"><b>${escape(e.title)}</b><p>${escape(e.text)}</p></article>` : ''}${s.chapter?.history[0] ? `<article class="quest-story remembered"><b>Elkészült: ${escape(s.chapter.history[0].title)}</b>${s.chapter.history[0].benefit ? `<p>${escape(s.chapter.history[0].benefit)}</p>` : ''}${materialAmounts(s.chapter.history[0].reward, renderer)}</article>` : ''}${s.adventure.lastDiscovery ? `<article class="quest-story remembered"><b>${escape(s.adventure.lastDiscovery.title)} · Megtalálva</b><p>${escape(s.adventure.lastDiscovery.text)}</p></article>` : ''}<p class="hint">A nyomokhoz tartozó dolgokat a szigeten kell megtalálnod. A megrendelések nem járnak le.</p>`;
+      `<article class="quest-story current-task"><b>${escape(task.title)}</b><p>${escape(task.text)}</p>${task.needs ? materialAmounts(task.needs, renderer, { available: s.resources }) : ''}${task.benefit ? `<p class="task-result">${escape(task.benefit)}</p>` : ''}</article>`;
   }
 }
+
 function selectedSite() {
   return selected ? siteById(s, selected) : null;
 }
@@ -256,11 +234,13 @@ function displayRate(b) {
 }
 let craftChoice = { buildingId: null, units: 0 },
   craftDragging = false;
+let detailOwner = null;
 function detail() {
   if (craftDragging || document.activeElement?.id === 'craftamount') return;
   const p = selectedSite();
   if (!p) {
     $('detail').hidden = true;
+    detailOwner = null;
     return;
   }
   const b = p.buildingId ? s.buildings.find((b) => b.id === p.buildingId) : null,
@@ -337,9 +317,9 @@ function detail() {
         label = 'Beszélek az áccsal';
       }
     } else if (b.type === 'residence') {
-      note = 'Az ács hazaköltözött, és megjavította a fűrészműhely szerkezetét.';
-      rows =
-        '<p class="hint">A fűrészműhely legalább 2. szintű lett. Az ács a kőfaragóhoz vezető ösvényt is megmutatta.</p>';
+      note =
+        'Az ács itt lakik, és a fűrészműhelyben dolgozik. A további bővítéseknél is ő végzi a szakmunkát.';
+      rows = `<div><span>Munkahelye</span><b>Fűrészműhely · ${s.buildings.find((v) => v.type === 'sawmill')?.level || 1}. szint</b></div><p class="hint">A jobb munkapadot és vezetősínt ő készítette. A következő műhelybővítés anyagigényét és munkadíját a fűrészműhelynél látod.</p>`;
     } else if (b.type === 'tradepost') {
       note =
         'A kereskedő itt vásárolja meg a javításaihoz kért anyagokat. Előre látod az árat és a felhasználást.';
@@ -360,7 +340,8 @@ function detail() {
         ? ''
         : `<div><span>${material}${workers.length ? ' (becsült)' : ''}</span><b>${displayRate(b).toFixed(1)}/perc</b></div>`;
       if (!canUpgradeBuilding(s, b)) {
-        note = 'A szerkezet sérült. Az ács a háza javításáért cserébe rendbe tudja tenni.';
+        note =
+          'Működik 1. szinten, kézi fűrészeléssel. Az ács jobb munkapadot és vezetősínt készíthet: ettől lesz gyorsabb a 2. szint.';
         rows = '';
       } else if (price) {
         rows += `<div><span>Következő fejlesztés</span><b>${b.level + 1}. szint</b></div><div><span>${material} · termelés</span><b>${displayRate(b).toFixed(1)} → ${displayRate(next).toFixed(1)}/perc</b></div>${workers.length ? `<div><span>Munkások</span><b>${workerCount(b)} → ${workerCount(next)}</b></div><div><span>Tervezett élelemigény</span><b>${workerCount(b)} → ${workerCount(next)}/perc</b></div>` : ''}<div class="material-row"><span>Szükséges · készlet / költség</span><b>${materialAmounts(price, renderer, { available: s.resources })}</b></div>`;
@@ -368,7 +349,8 @@ function detail() {
         label = 'Fejlesztés';
         disabled = !afford(s, price) || !canUpgradeBuilding(s, b);
         if (!canUpgradeBuilding(s, b))
-          note = 'A szerkezet sérült. Az ács a háza javításáért cserébe rendbe tudja tenni.';
+          note =
+            'Működik 1. szinten, kézi fűrészeléssel. Az ács jobb munkapadot és vezetősínt készíthet: ettől lesz gyorsabb a 2. szint.';
         if (price.silver)
           rows += '<p class="hint">Az ezüst a műhely bővítésén dolgozó mester munkadíja.</p>';
       } else note += ' · Teljesen fejlesztve';
@@ -384,7 +366,7 @@ function detail() {
       Object.keys(recipe.input).map((k) => [k, Math.floor(s.resources[k])]),
     );
     rows =
-      `<section class="craft-planner"><b>Mit készít a műhely?</b><div class="recipe-line">${materialAmounts(recipe.input, renderer)}<span>→</span>${materialAmounts(recipe.output, renderer)}</div><p class="hint">${b.type === 'sawmill' ? 'A deszka tetőkhöz és a műhelyek javításához kell.' : b.type === 'mason' ? 'A faragott kő tartós falakhoz és a raktár javításához kell.' : TYPES[b.type].desc + '.'}</p><label for="craftamount">Mennyit szeretnél készíteni?</label><p class="craft-stock">Készleted: ${materialAmounts(inventory, renderer)}</p><input id="craftamount" type="range" min="0" max="${max}" step="1" value="${craftChoice.units}" aria-label="Készítendő mennyiség"><div id="craftpreview" class="recipe-line" aria-live="polite"></div><button id="startcraft">Gyártás indítása</button>${!max ? '<p class="hint">Még nincs elég alapanyag egy késztermékhez. Nem vontunk le semmit.</p>' : ''}${progress ? `<div class="work-status"><b>Folyamatban: ${progress.completed} / ${progress.total} ${RES[progress.outputKind][1].toLowerCase()} kész</b><progress value="${progress.fraction}" max="1"></progress><p>Feldolgozásra vár: ${materialAmounts(progress.inputLeft, renderer)} → ${materialAmounts(progress.outputLeft, renderer)}</p></div>` : ''}<p class="hint">Csak indításkor kerül az anyag a műhelybe. A késztermék magától a hátizsákba kerül. Egy darab alapideje: ${Math.round(recipe.seconds / craftSpeed(s, b))} mp.</p></section>` +
+      `<section class="craft-planner"><b>Mit készít a műhely?</b><div class="recipe-line">${materialAmounts(recipe.input, renderer)}<span>→</span>${materialAmounts(recipe.output, renderer)}</div><p class="hint">${b.type === 'sawmill' ? 'A deszka tetőkhöz és a műhelyek javításához kell.' : b.type === 'mason' ? 'A faragott kő tartós falakhoz és a raktár javításához kell.' : TYPES[b.type].desc + '.'}</p><label for="craftamount">Mennyit szeretnél készíteni?</label><p class="craft-stock">Készleted: ${materialAmounts(inventory, renderer)}</p><input id="craftamount" type="range" min="0" max="${max}" step="1" value="${craftChoice.units}" aria-label="Készítendő mennyiség"><div id="craftpreview" class="recipe-line" aria-live="polite"></div><p id="crafttime" class="craft-time" aria-live="polite"></p><button id="startcraft">Gyártás indítása</button>${!max ? '<p class="hint">Még nincs elég alapanyag egy késztermékhez. Nem vontunk le semmit.</p>' : ''}${progress ? `<div class="work-status"><b>Folyamatban: ${progress.completed} / ${progress.total} ${RES[progress.outputKind][1].toLowerCase()} kész</b><progress value="${progress.fraction}" max="1"></progress><p>Feldolgozásra vár: ${materialAmounts(progress.inputLeft, renderer)} → ${materialAmounts(progress.outputLeft, renderer)}</p></div>` : ''}</section>` +
       rows;
   }
   if (near && p.restored && p.id === 'tradepost') {
@@ -394,14 +376,19 @@ function detail() {
     }
   }
   $('detail').hidden = false;
+  const keepDetailScroll = detailOwner === selected;
   const previousScroll = $('detail').scrollTop;
-  $('detail').innerHTML =
-    `<div class="site-head"><div><h3>${escape(p.name)}${b ? ' · ' + b.level + '. szint' : ''}</h3><p>${escape(note)}</p></div><button id="dismissdetail" aria-label="Panel bezárása">✕</button></div><div class="site-rows">${rows}</div>${action ? `<div class="site-actions"><button id="siteaction" ${disabled ? 'disabled' : ''}>${label}</button></div>` : ''}`;
+  const detailHTML = `<div class="site-head"><div><h3>${escape(p.name)}${b ? ' · ' + b.level + '. szint' : ''}</h3><p>${escape(note)}</p></div><button id="dismissdetail" aria-label="Panel bezárása">✕</button></div><div class="site-rows">${rows}</div>${action ? `<div class="site-actions"><button id="siteaction" data-action="${action}" ${disabled ? 'disabled' : ''}>${label}</button></div>` : ''}`;
+  if (detailOwner !== selected) {
+    $('detail').innerHTML = detailHTML;
+    detailOwner = selected;
+    $('detail').scrollTop = 0;
+  } else patchMarkup($('detail'), detailHTML);
   $('dismissdetail').onclick = () => {
     selected = null;
     detail();
   };
-  $('detail').scrollTop = previousScroll;
+  $('detail').scrollTop = keepDetailScroll ? previousScroll : 0;
   if ($('craftamount')) {
     const recipe = RECIPES[TYPES[b.type].recipe],
       slider = $('craftamount');
@@ -415,6 +402,12 @@ function detail() {
         );
       $('craftpreview').innerHTML =
         materialAmounts(inputs, renderer) + '<span>→</span>' + materialAmounts(outputs, renderer);
+      const estimate = craftEstimate(s, b, craftChoice.units);
+      $('crafttime').textContent = estimate
+        ? 'Becsült elkészülés: kb. ' +
+          durationText(estimate) +
+          (productionProgress(s, b) ? ' (a folyó munkával együtt)' : '')
+        : 'Válassz mennyiséget a csúszkán.';
       $('startcraft').disabled = craftChoice.units === 0;
       $('startcraft').textContent = productionProgress(s, b)
         ? 'Hozzáadom a munkához'
@@ -472,7 +465,7 @@ function detail() {
               ? 'Az átjáró elkészült. A túlpart megnyílt.'
               : 'A hely újra életre kelt.',
           );
-          maybeEvent(s);
+          if (!s.chapter) maybeEvent(s);
         }
         render(true);
       }
@@ -497,6 +490,60 @@ function finishOrder(p) {
     toast(order.benefit || 'A kereskedő átvette az anyagokat és kifizette az ezüstöt.');
   }
 }
+function refreshDetailValues() {
+  const p = selectedSite(),
+    b = p?.buildingId && s.buildings.find((v) => v.id === p.buildingId);
+  if (!p || $('detail').hidden || craftDragging || document.activeElement?.id === 'craftamount')
+    return;
+  $('detail')
+    .querySelectorAll('[data-available]')
+    .forEach((el) => {
+      const k = el.dataset.material,
+        n = Number(el.dataset.required),
+        owned = Math.floor(s.resources[k]);
+      el.querySelector('strong').textContent = owned + ' / ' + n;
+      el.classList.toggle('missing', owned < n);
+    });
+  const slider = $('craftamount');
+  if (slider && b) {
+    const recipe = RECIPES[TYPES[b.type].recipe];
+    slider.max = String(craftLimit(s, recipe));
+    patchMarkup(
+      $('detail').querySelector('.craft-stock'),
+      'Készleted: ' +
+        materialAmounts(
+          Object.fromEntries(Object.keys(recipe.input).map((k) => [k, Math.floor(s.resources[k])])),
+          renderer,
+        ),
+    );
+    slider.oninput?.();
+    const work = productionProgress(s, b),
+      box = $('detail').querySelector('.work-status');
+    if (work && box) {
+      box.querySelector('b').textContent =
+        `Folyamatban: ${work.completed} / ${work.total} ${RES[work.outputKind][1].toLowerCase()} kész`;
+      box.querySelector('progress').value = work.fraction;
+      patchMarkup(
+        box.querySelector('p'),
+        'Feldolgozásra vár: ' +
+          materialAmounts(work.inputLeft, renderer) +
+          ' → ' +
+          materialAmounts(work.outputLeft, renderer),
+      );
+    }
+  }
+  const button = $('siteaction');
+  if (button) {
+    const action = button.dataset.action;
+    if (action === 'upgrade')
+      button.disabled = !afford(s, upgradeCost(b) || {}) || !canUpgradeBuilding(s, b);
+    if (action === 'restore') button.disabled = !restoration(s, p.id).ok;
+    if (action === 'order') {
+      const order = activeOrder(s, p.id);
+      button.disabled = !order || !afford(s, order.needs);
+    }
+  }
+}
 let detailSignature = '';
 function render(force = false) {
   $('resources').innerHTML = Object.entries(RES)
@@ -506,7 +553,7 @@ function render(force = false) {
         `<div class="resource ${k === 'food' && s.resources.food <= 0 ? 'low' : ''}" aria-label="${name}" title="${name}${k === 'food' ? ' · A munkások ellátása és fejlesztések' : ''}"><span class="ico">${icon}</span><b>${Intl.NumberFormat('hu', { notation: 'compact', maximumFractionDigits: 1 }).format(Math.floor(s.resources[k]))}</b></div>`,
     )
     .join('');
-  $('nextgoal').textContent = 'Feladat: ' + objective(s);
+  $('nextgoal').textContent = 'Feladat: ' + currentTask(s).title;
   $('nextgoal').setAttribute('aria-expanded', String(sheet === 'quests'));
   $('backpack').innerHTML = materialIcon('backpack', renderer);
   const q = supplySummary(s),
@@ -526,17 +573,13 @@ function render(force = false) {
     b = p?.buildingId ? s.buildings.find((v) => v.id === p.buildingId) : null;
   const signature = JSON.stringify([
     selected,
-    JSON.stringify(s.resources),
-    s.production?.jobs.map((j) => j.id + ':' + Math.ceil(j.remaining)).join(','),
-    q.working,
-    q.resting,
-    q.waiting,
+    !!(b && productionProgress(s, b)),
+
     p?.inspected,
     p?.restored,
     p?.salvaged,
     b?.level,
-    b && afford(s, upgradeCost(b) || {}),
-    p?.cost && afford(s, siteCost(s, p)),
+
     s.adventure.items['repair-kit'] || 0,
     p && Math.hypot(s.hero.x - p.x, s.hero.y - p.y) <= 1.8,
   ]);
@@ -544,6 +587,7 @@ function render(force = false) {
     detail();
     detailSignature = signature;
   }
+  refreshDetailValues();
   if (force || sheet === 'supply' || sheet === 'inventory') renderPanel();
 }
 function inspect(p) {
@@ -563,10 +607,36 @@ function inspect(p) {
   if (r.ok) {
     save();
     render(true);
+    if (p.kind === 'bridge' && !p.restored) {
+      openBridge(p);
+      return;
+    }
+    if (p.kind === 'wreck' && p.salvaged) {
+      dialog(
+        'A roncs maradványai',
+        'A hajó a sekély vízben akadt fenn. A partra sodródott holmikból használható fát, követ és élelmet mentettél ki.',
+        [
+          {
+            label: 'Vissza a partra',
+            run: () => {
+              $('storymodal').close();
+            },
+          },
+        ],
+        `<p>Megmentett holmik</p>${materialAmounts(WRECK_SUPPLIES, renderer)}<p>A készlet már a hátizsákodban van.</p>`,
+      );
+      return;
+    }
     if (!openBaseWelcome() && !(p.type === 'hut' && openCarpenter())) toast(r.text);
   } else approachSite(p);
 }
 function selectSite(id) {
+  route = [];
+  siteTarget = null;
+  encounterTarget = null;
+  drive = { x: 0, y: 0 };
+  delete s.hero.job;
+  delete s.hero.siteWork;
   encounterTarget = null;
   selectedWorker = null;
   selected = id;
@@ -698,7 +768,7 @@ function update(dt) {
     const sites = discoverSites(s);
     sites.forEach((p) => toast('Új helyszínt találtál: ' + p.name));
     if (found) {
-      maybeEvent(s);
+      if (!s.chapter) maybeEvent(s);
       save();
       render();
     }
@@ -823,12 +893,13 @@ attachGestures(canvas, camera, {
     }
   },
 });
-function dialog(title, text, buttons) {
+function dialog(title, text, buttons, extras = '') {
   drive = { x: 0, y: 0 };
+  $('storymodal').classList.remove('place-notice');
   $('storytitle').textContent = title;
   $('storytext').textContent = text;
   $('storyactions').replaceChildren();
-  $('storyextras').replaceChildren();
+  $('storyextras').innerHTML = extras;
   for (const action of buttons) {
     const b = document.createElement('button');
     b.textContent = action.label;
@@ -843,13 +914,33 @@ function dialog(title, text, buttons) {
   }
   if (!$('storymodal').open) $('storymodal').showModal();
 }
+function openBridge(p) {
+  dialog(
+    'A leszakadt fahíd',
+    'Itt még nem tudsz átmenni. A gerendák leszakadtak, de az alapok tartanak. Odaát egy régi ösvény tűnik a ködbe. Vajon mit rejthet a túlpart?',
+    [
+      {
+        label: 'Megnézem a javítást',
+        run: () => {
+          $('storymodal').close();
+          selected = p.id;
+          detail();
+        },
+      },
+    ],
+  );
+  $('storymodal').classList.add('place-notice');
+  $('storyextras').innerHTML =
+    '<p>Az átjáró helyreállításához:</p>' +
+    materialAmounts(siteCost(s, p), renderer, { available: s.resources });
+}
 function openCarpenter() {
   if (!carpenterWaiting(s)) return false;
   const base = s.adventure.sites.find((p) => p.type === 'hut');
   if (!base || Math.hypot(s.hero.x - base.x, s.hero.y - base.y) > 1.8) return false;
   dialog(
     'Egy ács a küszöbön',
-    '„A vihar megbontotta a házam tetejét. Ha hozol 3 deszkát és 8 követ, megjavítom neked a régi fűrészműhely szerkezetét.”\n\nAz ács a házánál várja majd az anyagot. A műhely javítása után gyorsabban készül a deszka, és az épület is megváltozik.',
+    '„A vihar megbontotta a házam tetejét. Ha hozol 3 deszkát és 8 követ, jobb munkapadot és vezetősínt készítek az általad már elindított fűrészműhelybe.”\n\nAz ács a házánál várja majd az anyagot. Az 1. szinten már működő műhelyt 2. szintre bővíti: ugyanannyi idő alatt 30%-kal több deszkát készít.',
     [
       {
         label: 'Segítek rendbe hozni a házad',
@@ -916,7 +1007,7 @@ function openBaseWelcome() {
 function showHelp() {
   dialog(
     'Így működik a sziget',
-    'Húzd és tartsd az ujjad a világon: a karakter fut. Két ujjal mozgatod és nagyítod a kamerát.\n\nA készleteket a hátizsákban látod, a fejleszthető épületeket nyíl jelzi. Koppints egy látható tárgyra vagy helyszínre: a karakter odamegy és megvizsgálja. A feladatok csak nyomot adnak, a megoldást neked kell megtalálnod.\n\nA dolgozók maguktól esznek és pihennek. Az ellátottságjelzőnél látod a fogyasztást és az energiaállapotokat. A sziget történetét és lehetőségeit a helyszíneken ismered meg.',
+    'Húzd és tartsd az ujjad a világon: a karakter fut. Két ujjal mozgatod és nagyítod a kamerát.\n\nA készleteket a hátizsákban látod, a fejleszthető épületeket nyíl jelzi. Koppints egy látható tárgyra vagy helyszínre: a karakter odamegy és megvizsgálja. Mindig egy aktuális feladat vezet tovább. A felső Feladat sorra koppintva látod a teendőt és a szükséges anyagokat.\n\nA dolgozók maguktól esznek és pihennek. Az ellátottságjelzőnél látod a fogyasztást és az energiaállapotokat. A sziget történetét és lehetőségeit a helyszíneken ismered meg.',
     [
       {
         label: 'Értem',
@@ -1014,7 +1105,7 @@ function approachEncounter(kind) {
   detail();
 }
 function finishEncounter(kind) {
-  if (kind === 'trader' && s.adventure.pending?.type !== 'visitor') {
+  if (kind === 'trader' && (s.chapter || s.adventure.pending?.type !== 'visitor')) {
     openTrader();
     return;
   }
@@ -1090,7 +1181,7 @@ function activate(next) {
 $('settings').onclick = () => {
   drive = { x: 0, y: 0 };
   $('saveinfo').textContent =
-    `Játékverzió: 0.11 · Mentés: v${s.version}. ${s.archive ? 'A megőrzött szigeteid ugyanebben a mentésben vannak.' : 'Automatikus mentés ezen az eszközön.'}`;
+    `Játékverzió: 0.12 · Mentés: v${s.version}. ${s.archive ? 'A megőrzött szigeteid ugyanebben a mentésben vannak.' : 'Automatikus mentés ezen az eszközön.'}`;
   $('switchcampaign').textContent = s.archive
     ? 'Váltás a másik megőrzött szigetre'
     : 'Új kaland, a jelenlegi sziget megőrzésével';
@@ -1140,6 +1231,7 @@ function download(data, name) {
 }
 function migrationBackup() {
   return (
+    localStorage.getItem('szigetkert.backup.pre-v12-v8') ||
     localStorage.getItem('szigetkert.backup.pre-simplification-v7') ||
     localStorage.getItem('szigetkert.backup.pre-chapter-v6') ||
     localStorage.getItem('szigetkert.backup.pre-supply-v5')
@@ -1205,6 +1297,7 @@ function keyDrive() {
 }
 window.addEventListener('keydown', (e) => {
   if ($('modal').open || $('storymodal').open) return;
+  if (e.target?.closest?.('input, textarea, select, button, [contenteditable]')) return;
   if (['w', 'a', 's', 'd', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
     e.preventDefault();
     keys.add(e.key);

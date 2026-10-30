@@ -66,7 +66,7 @@ const legacy = structuredClone(s);
 legacy.version = 2;
 delete legacy.workers;
 const migrated = validate(legacy);
-assert.equal(migrated.version, 7);
+assert.equal(migrated.version, 8);
 assert.deepEqual(migrated.workers, []);
 console.log(
   'PASS: valódi munkáskör, visszahozott készlet, mentett rakomány, akadályozott termelés, véges távolléti kitermelés, 3 fejlesztési szint, 1–3 munkás, áthelyezéskor megőrzött azonosító és szint, v2→v5 migráció.',

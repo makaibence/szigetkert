@@ -1,11 +1,21 @@
 import { CHAPTER_TRAILS, RECIPES } from './content.js';
+import { buildingLabel } from './world-ui.js';
 import { productionProgress } from './production.js';
 import { RES } from './engine.js';
 import { MATERIAL_ART } from './ui-icons.js';
 import { siteVisible, carpenterWaiting } from './chapter.js';
 import { siteReadiness } from './site-actions.js';
 import { TRAILS, EARLY_TRAILS } from './island-layout.js';
-import { SIZE, key, terrain, terrainAt, resourcesAt, liveResources, noise } from './world.js';
+import {
+  SIZE,
+  key,
+  terrain,
+  terrainAt,
+  resourcesAt,
+  liveResources,
+  noise,
+  arrivalBeach,
+} from './world.js';
 import { placement } from './engine.js';
 import { loadArt, buildingFrame, buildingArt } from './art.js';
 import { TerrainSurface } from './terrain-art.js';
@@ -353,7 +363,7 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
             },
           });
         }
-        if (terrainAt(s, x, y) === 'grass') {
+        if (terrainAt(s, x, y) === 'grass' && !arrivalBeach(s, x, y)) {
           // Low, non-blocking plants follow patches; they do not pretend to be harvestable trees.
           const fertility = noise(Math.floor(x / 3) + 19, Math.floor(y / 3) + 11);
           const count = fertility > 0.65 ? 3 : fertility > 0.4 ? 1 : 0;
@@ -447,7 +457,7 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
         },
       });
     }
-    const discovery = s.adventure?.pending;
+    const discovery = s.chapter ? null : s.adventure?.pending;
     if (
       discovery?.target &&
       discovery.type !== 'visitor' &&
@@ -474,7 +484,10 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
         (site.kind === 'building' && site.restored)
       )
         continue;
-      const p = pos(site.x, site.y);
+      const p =
+        site.kind === 'wreck' && s.worldVersion >= 2
+          ? pos(site.x - 1.7, site.y + 0.15)
+          : pos(site.x, site.y);
       if (!visible(p)) continue;
       if (site.type === 'hut') {
         objects.push({
@@ -608,75 +621,71 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
     }
     for (const b of s.buildings) {
       if (!known.has(key(b.x, b.y))) continue;
-      const progress = productionProgress(s, b),
-        chosen = getSelected(),
-        selected = chosen?.x === b.x && chosen?.y === b.y;
-      if (!progress && !selected) continue;
       const p = pos(b.x, b.y),
+        progress = productionProgress(s, b),
         ba = buildingArt(b.type, b.level || 1),
         f = art.manifest[ba.atlas].frames[ba.index];
-      if (!visible(p)) continue;
-      const y = p.y - (unit * 1.42 * f[3]) / f[2] - 18;
+      if (p.x < 0 || p.x > width || p.y < 0 || p.y > height + unit * 1.5) continue;
+      const box = buildingLabel(p, unit, f[3] / f[2], !!progress),
+        left = box.left,
+        top = box.top,
+        w = box.width,
+        h = box.height;
+      const site = s.adventure?.sites.find((p) => p.buildingId === b.id),
+        ready = site && siteReadiness(s, site);
+      ctx.fillStyle = '#203c3fee';
+      ctx.strokeStyle = '#c6b981a0';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(left, top, w, h, 7);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#fff1ce';
+      ctx.font = '600 10px system-ui';
+      ctx.textAlign = 'center';
       if (progress) {
-        const w = 180,
-          h = 67,
-          left = Math.max(4, Math.min(width - w - 4, p.x - w / 2)),
-          top = y - h;
-        ctx.fillStyle = '#203c3ff2';
-        ctx.strokeStyle = '#c6b981';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.roundRect(left, top, w, h, 10);
-        ctx.fill();
-        ctx.stroke();
-        ctx.fillStyle = '#fff1ce';
-        ctx.font = '600 12px system-ui';
-        ctx.textAlign = 'left';
-        const name = RES[progress.outputKind][1];
         ctx.fillText(
-          `${name}: ${progress.completed} / ${progress.total} kész`,
-          left + 10,
-          top + 17,
-          w - 28,
+          `${b.level || 1}. szint · ${progress.completed}/${progress.total} kész`,
+          left + w / 2,
+          top + 13,
+          w - 12,
         );
-        const recipe = progress.recipe,
-          input = Object.keys(recipe.input)[0],
+        const input = Object.keys(progress.recipe.input)[0],
           output = progress.outputKind;
         const drawIcon = (kind, x) => {
           const a = MATERIAL_ART[kind];
-          if (a) ctx.drawImage(art.frameImages[a[0]][a[1]], x, top + 24, 20, 20);
+          if (a) ctx.drawImage(art.frameImages[a[0]][a[1]], x, top + 18, 15, 15);
         };
-        drawIcon(input, left + 9);
-        ctx.font = '11px system-ui';
-        ctx.fillText(String(progress.inputLeft[input]), left + 32, top + 38, 40);
-        ctx.fillText('→', left + 77, top + 38);
-        drawIcon(output, left + 96);
-        ctx.fillText(String(progress.outputLeft[output]) + ' hátra', left + 120, top + 38, w - 125);
-        ctx.fillStyle = '#11282d';
-        ctx.beginPath();
-        ctx.roundRect(left + 10, top + 51, w - 20, 7, 4);
-        ctx.fill();
-        ctx.fillStyle = '#9cb85b';
-        ctx.beginPath();
-        ctx.roundRect(left + 10, top + 51, Math.max(2, (w - 20) * progress.fraction), 7, 4);
-        ctx.fill();
         ctx.textAlign = 'left';
-        interactive.push({ left, top, w, h, tile: { x: b.x, y: b.y, buildingId: b.id } });
-      } else if (selected) {
-        ctx.fillStyle = '#203c3ff2';
+        drawIcon(input, left + 7);
+        ctx.font = '10px system-ui';
+        ctx.fillText(String(progress.inputLeft[input]), left + 24, top + 29, w * 0.22);
+        ctx.fillText('→', left + w * 0.45, top + 29);
+        drawIcon(output, left + w * 0.58);
+        ctx.fillText(String(progress.outputLeft[output]), left + w * 0.58 + 17, top + 29, w * 0.25);
+        ctx.fillStyle = '#132a2d';
         ctx.beginPath();
-        ctx.roundRect(p.x - 35, y - 29, 70, 23, 7);
+        ctx.roundRect(left + 7, top + 38, w - 14, 5, 3);
         ctx.fill();
-        ctx.fillStyle = '#f5e7c7';
-        ctx.font = '600 11px system-ui';
-        ctx.textAlign = 'center';
-        ctx.fillText(`${b.level || 1}. szint`, p.x, y - 13);
-        ctx.textAlign = 'left';
-      }
+        ctx.fillStyle = '#a5c766';
+        ctx.beginPath();
+        ctx.roundRect(left + 7, top + 38, Math.max(1, (w - 14) * progress.fraction), 5, 3);
+        ctx.fill();
+      } else
+        ctx.fillText(`${b.level || 1}. szint${ready ? ' ↑' : ''}`, left + w / 2, top + 15, w - 8);
+      ctx.textAlign = 'left';
+      interactive.push({
+        left,
+        top,
+        w,
+        h,
+        tile: { x: b.x, y: b.y, siteId: site?.id, buildingId: b.id, badge: true },
+      });
     }
     for (const site of s.adventure?.sites || []) {
       const ready = siteReadiness(s, site);
       if (
+        site.restored ||
         !ready ||
         !siteVisible(s, site) ||
         (site.buildingId &&
@@ -686,7 +695,10 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
           ))
       )
         continue;
-      const p = pos(site.x, site.y);
+      const p =
+        site.kind === 'wreck' && s.worldVersion >= 2
+          ? pos(site.x - 1.7, site.y + 0.15)
+          : pos(site.x, site.y);
       if (!visible(p)) continue;
       const b = site.buildingId && s.buildings.find((b) => b.id === site.buildingId),
         ba = site.type ? buildingArt(site.type, b?.level || 1) : null;
@@ -771,7 +783,7 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
       const u = (point.x - item.left) / item.w,
         v = (point.y - item.top) / item.h;
       if (u < 0 || v < 0 || u >= 1 || v >= 1) continue;
-      if (item.tile.workerId || item.tile.badge) return item.tile;
+      if (!item.frame || item.tile.workerId || item.tile.badge) return item.tile;
       const [sx, sy, sw, sh] = item.frame,
         image = art[item.atlas];
       const px = Math.floor(u * sw),

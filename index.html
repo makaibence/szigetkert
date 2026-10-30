@@ -41,22 +41,25 @@
         <section id="panel"></section>
       </div>
     </main>
-    <footer><span id="savestatus">Automatikus mentés</span><span>V0.11</span></footer>
+    <footer><span id="savestatus">Automatikus mentés</span><span>V0.12</span></footer>
     <div id="toast" role="status"></div>
     <dialog id="modal">
       <button id="close" class="close" aria-label="Bezárás">✕</button>
       <h2>Mentés és beállítások</h2>
-      <p>A játék automatikusan ment. A fontos események és megkezdett gyűjtés megmaradnak.</p>
-      <button id="backup" hidden>Átalakítás előtti mentés letöltése</button>
-      <button id="export">Mentés exportálása</button
-      ><label class="import"
-        >Mentés importálása<input type="file" id="import" accept="application/json,.json"
-      /></label>
-      <p id="saveinfo"></p>
+      <p>A játék magától ment ezen az eszközön. Játék közben nincs vele teendőd.</p>
       <button id="help">Így működik a játék</button>
-      <button id="freshchapter">Új kaland a kisebb pályán, a szigeteim megőrzésével</button>
-      <div id="savedislands"></div>
-      <button id="switchcampaign">Másik sziget</button>
+      <details id="advancedsettings">
+        <summary>Biztonsági mentés és megőrzött játékok</summary>
+        <button id="backup" hidden>Átalakítás előtti mentés letöltése</button>
+        <button id="export">Mentés exportálása</button
+        ><label class="import"
+          >Mentés importálása<input type="file" id="import" accept="application/json,.json"
+        /></label>
+        <p id="saveinfo"></p>
+        <button id="freshchapter">Új kaland a kisebb pályán, a szigeteim megőrzésével</button>
+        <div id="savedislands"></div>
+        <button id="switchcampaign">Másik sziget</button>
+      </details>
       <p id="offlinestatus" role="status">Offline fájlok előkészítése…</p>
       <button id="checkupdate">Frissítés keresése</button>
       <h3>Telepítés iPhone-ra</h3>

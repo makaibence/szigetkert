@@ -31,6 +31,15 @@ export function terrain(x, y, version = 1) {
   const hash = noise(x, y);
   return hash < 0.25 ? 'forest' : hash < 0.31 ? 'mountain' : 'grass';
 }
+export const EXTRA_STONES = [
+  [6, 8],
+  [7, 13],
+  [10, 5],
+  [12, 13],
+];
+export function arrivalBeach(s, x, y) {
+  return s.worldVersion >= 2 && x < 4.9 && Math.hypot(x - 2, y - 10) < 2.9;
+}
 const definitions = new Map();
 export function resourcesAt(x, y, version = 1) {
   const k = version + ':' + key(x, y);
@@ -56,6 +65,21 @@ export function resourcesAt(x, y, version = 1) {
         scale: 0.86 + noise(x, y + i * 7) * 0.31,
       }),
     );
+  if (version === 4 && t === 'grass' && EXTRA_STONES.some(([a, b]) => a === x && b === y))
+    result.push(
+      Object.freeze({
+        id: `rock:${x}:${y}:1`,
+        tileX: x,
+        tileY: y,
+        x,
+        y,
+        kind: 'stone',
+        hits: 120,
+        yield: 1,
+        variant: 8 + Math.floor(noise(x, y) * 3),
+        scale: 0.82 + noise(y, x) * 0.15,
+      }),
+    );
   definitions.set(k, result);
   return result;
 }
@@ -63,6 +87,7 @@ export function liveResources(s, x, y) {
   return resourcesAt(x, y, s.worldVersion).filter(
     (r) =>
       !s.resourceState?.[r.id]?.cleared &&
+      !arrivalBeach(s, r.x, r.y) &&
       !(
         s.chapter &&
         (s.adventure?.sites.some(
@@ -93,6 +118,7 @@ export function terrainAt(s, x, y) {
   )
     return 'rubble';
   const base = terrain(x, y, s.worldVersion);
+  if (base === 'grass' && liveResources(s, x, y).some((n) => n.kind === 'stone')) return 'mountain';
   return (base === 'forest' || base === 'mountain') && liveResources(s, x, y).length === 0
     ? 'grass'
     : base;

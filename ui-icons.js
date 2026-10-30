@@ -28,7 +28,7 @@ export function materialAmounts(values, renderer, { available } = {}) {
   return `<span class="material-amounts">${Object.entries(values)
     .map(
       ([k, n]) =>
-        `<span class="material-amount ${available && available[k] < n ? 'missing' : ''}" aria-label="${RES[k][1]}: ${available ? Math.floor(available[k]) + ' / ' : ''}${n}">${materialIcon(k, renderer)}<strong>${available ? Math.floor(available[k]) + ' / ' : ''}${n}</strong><span class="material-name">${RES[k][1]}</span></span>`,
+        `<span data-material="${k}" data-required="${n}" ${available ? 'data-available="true"' : ''} class="material-amount ${available && available[k] < n ? 'missing' : ''}" aria-label="${RES[k][1]}: ${available ? Math.floor(available[k]) + ' / ' : ''}${n}">${materialIcon(k, renderer)}<strong>${available ? Math.floor(available[k]) + ' / ' : ''}${n}</strong><span class="material-name">${RES[k][1]}</span></span>`,
     )
     .join('')}</span>`;
 }

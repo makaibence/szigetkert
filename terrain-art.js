@@ -118,7 +118,7 @@ export class TerrainSurface {
     g.fillRect(cx - 105, cy - 105, 210, 210);
     if (this.worldVersion >= 2) {
       g.globalCompositeOperation = 'destination-out';
-      const beach = g.createRadialGradient(4 * SCALE, 12 * SCALE, 15, 4 * SCALE, 12 * SCALE, 145);
+      const beach = g.createRadialGradient(4 * SCALE, 12 * SCALE, 15, 4 * SCALE, 12 * SCALE, 185);
       beach.addColorStop(0, '#000');
       beach.addColorStop(0.45, '#000d');
       beach.addColorStop(1, '#0000');

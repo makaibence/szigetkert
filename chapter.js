@@ -75,6 +75,9 @@ export function ensureChapter(s) {
       if (mill) mill.level = Math.max(2, mill.level || 1);
     }
   }
+  c.storyRevision = 3;
+  const home = s.adventure.sites.find((p) => p.id === 'house');
+  if (home?.restored) home.name = 'Az ács otthona';
   ensureMerchant(s);
   return s;
 }
@@ -173,6 +176,7 @@ export function deliverOrder(s, siteId, orderId) {
   for (const [k, n] of Object.entries(o.reward)) s.resources[k] += n;
   if (o.restore && !p.restored) {
     p.restored = true;
+    if (p.id === 'house') p.name = 'Az ács otthona';
     p.buildingId = 'building:' + s.nextBuildingId++;
     s.buildings.push({ id: p.buildingId, type: p.type, x: p.x, y: p.y, level: 1 });
   }
@@ -270,7 +274,7 @@ export function validateChapter(s) {
   const c = s.chapter;
   if (
     c.revision !== 1 ||
-    c.storyRevision !== 2 ||
+    ![2, 3].includes(c.storyRevision) ||
     !['carpenterInvited', 'carpenterIntro', 'advancedUnlocked'].every(
       (k) => typeof c[k] === 'boolean',
     ) ||
@@ -302,4 +306,97 @@ export function validateChapter(s) {
     )
   )
     throw Error('Hibás fejezetmentés.');
+}
+
+/** Exactly one player-facing task; background encounters remain saved, without competing prompts. */
+export function currentTask(s) {
+  const site = (id) => s.adventure.sites.find((p) => p.id === id),
+    done = (id) => site(id)?.restored,
+    make = (title, text, target, needs, benefit) => ({ title, text, target, needs, benefit });
+  if (!hasType(s, 'hut'))
+    return make('Egy biztos hely', 'Kövesd a parti ösvényt, és vizsgáld meg a régi házat.', 'camp');
+  if (!hasType(s, 'farm'))
+    return make(
+      'Élelem a dolgozóknak',
+      'Hozd rendbe a bázistól északra fekvő kertet.',
+      'garden',
+      site('garden')?.cost,
+    );
+  if (!hasType(s, 'lumber'))
+    return make(
+      'Induljon a favágás',
+      'A közeli favágótelep újra elláthatja fával a szigetet.',
+      'lumber',
+      site('lumber')?.cost,
+    );
+  if (!hasType(s, 'quarry'))
+    return make(
+      'Kő a javításokhoz',
+      'A teleptől északra áll a régi kőbánya. Hozd működésbe.',
+      'quarry',
+      site('quarry')?.cost,
+    );
+  if (!done('bridge'))
+    return make(
+      'Mi lehet a túlparton?',
+      'Vizsgáld meg a leszakadt hidat, majd javítsd meg az átjárót.',
+      'bridge',
+      site('bridge')?.cost,
+    );
+  if (!hasType(s, 'sawmill'))
+    return make(
+      'A régi fűrészműhely',
+      'A hídon túli műhelyt kitakarítva elindíthatod az egyszerű kézi fűrészelést.',
+      'farm',
+      site('farm')?.cost,
+    );
+  if (!s.chapter.completedOrders.includes('house-repair')) {
+    if (carpenterWaiting(s))
+      return make(
+        'Vendég a bázisnál',
+        'Egy ács szeretne beszélni veled. Térj vissza a bázishoz.',
+        'camp',
+      );
+    if (!s.chapter.carpenterIntro)
+      return make(
+        'Egy elhagyott ház',
+        'A műhelytől délre vezető rövid ösvényen egy viharvert ház áll. Vizsgáld meg.',
+        'house',
+      );
+    return make(
+      'Tető a mester feje fölé',
+      'Vigyél 3 deszkát és 8 követ az ács házához. Cserébe jobb munkapadot és vezetősínt készít a fűrészműhelyedbe.',
+      'house',
+      { planks: 3, stone: 8 },
+      'A működő 1. szintű fűrészműhely 2. szintű lesz: 30%-kal több deszkát tud készíteni ugyanannyi idő alatt.',
+    );
+  }
+  if (!hasType(s, 'mason'))
+    return make(
+      'Tartósabb építkezés',
+      'Az ács megmutatta a kőfaragóhoz vezető ösvényt. Hozd rendbe a műhelyt.',
+      'mason',
+      site('mason')?.cost,
+    );
+  if (!hasType(s, 'tradepost'))
+    return make(
+      'Találkozó a kereskedővel',
+      'Rendezd be a híd melletti kereskedőudvart.',
+      'tradepost',
+      site('tradepost')?.cost,
+    );
+  const order = activeOrder(s, 'tradepost');
+  if (order)
+    return make(
+      order.title,
+      order.text,
+      'tradepost',
+      order.needs,
+      order.benefit || 'A kereskedő kifizeti az átvett anyagok árát.',
+    );
+  return make(
+    'A kereskedő raktára',
+    'Keresd fel a kereskedőudvart, hogy megtudd, milyen javításhoz vásárol anyagot a kereskedő.',
+    'tradepost',
+  );
 }

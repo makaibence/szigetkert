@@ -178,6 +178,7 @@ export function updateWorkers(s, dt) {
         continue;
       }
       w.phase = 'outbound';
+      continue;
     }
     if (w.phase === 'inside') {
       w.x = b.x;
@@ -238,8 +239,23 @@ export function updateWorkers(s, dt) {
         continue;
       }
       if (path.length) {
+        const next = path[0],
+          dx = next.x - w.x,
+          dy = next.y - w.y;
+        if (Math.hypot(dx, dy) > 0.001) {
+          w.targetAngle = Math.atan2(-dx, dy);
+          const delta = Math.atan2(
+            Math.sin(w.targetAngle - (w.angle ?? w.targetAngle)),
+            Math.cos(w.targetAngle - (w.angle ?? w.targetAngle)),
+          );
+          if (Math.abs(delta) > 0.45) {
+            w.angle = (w.angle ?? w.targetAngle) + delta * (1 - Math.exp(-dt * 15));
+            w.action = 'idle';
+            continue;
+          }
+        }
         w.action = 'walk';
-        advanceHero({ ...s, hero: w }, path, dt, 0.62 * workerEfficiency(s, w));
+        advanceHero({ ...s, hero: w }, path, dt, 0.62 * workerEfficiency(s, w), true);
       }
       if (!path.length) {
         paths.delete(w);

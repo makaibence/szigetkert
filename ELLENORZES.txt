@@ -1,65 +1,48 @@
-SZIGETKERT 0.11 – ELLENŐRZÉSI JEGYZŐKÖNYV
+SZIGETKERT 0.12 – ELLENŐRZÉSI JEGYZŐKÖNYV
 2026. október 30.
 
-A meglévő 0.10 projekt folytatása. Átalakítás előtti forrásmásolat és a korábbi
-0.10 teljes ZIP megőrizve. Új grafikai forrásképet nem generáltam.
+A meglévő projekt folytatása, a 0.11 forrásmásolat és teljes ZIP megőrzésével.
+Nincs új projekt, fiók, külső adatbázis vagy új jogosultságigény.
 
-MEGVALÓSÍTÁS
-Egyetlen felső feladatgomb, alsó Sziget/Feladatok gombok nélkül.
-A felső kezelősáv 23 CSS-képponttal lejjebb került; a telefon biztonsági
-felső területéhez továbbra is igazodik. Valódi készüléken a natív felső
-homály pontos okát és az új távolság kényelmét még ellenőrizni kell.
-Közvetlen épületkiválasztás, szintjelzés a panelben és kijelöléskor az épület fölött.
-Műhelyenként csúszka, készlet, konkrét input/output előnézet és megerősítő gomb.
-A mennyiség felső határa a rendelkezésre álló alapanyag, nincs 12 darabos játékkorlát.
-Egy mentett munkabejegyzés sok darabot képvisel. A feldolgozás számolási ideje
-nem nő egyenes arányban a választott darabszámmal. Bezáráskor az állapot megmarad.
-A műhely fölött közös ikonrendszerrel számláló, hátralévő anyag és folyamatsáv.
-A részletes festett képre rajzolt primitív mozgó rönk/pengék és a kinti
-műhelymester megjelenítése eltávolítva. A bányász/favágó munkaciklusok megmaradtak.
-A bázis készlete nem szerepel a kezdő súgóban. A helyszíni készletkártya megmaradt.
-Hídhoz hangulati szöveg; ácshoz mentett meghívás, bázisnál találkozó és egyszeri
-beszélgetés. Cserejutalma a fűrészműhely 2. szintű javítása, ezüst helyett.
-A kereskedőnek indokolt anyagvásárlási megrendelése van. A későbbi műhelybővítés
-mesterdíja konkrét ezüstfelhasználás, a külön százalékos felszerelésbolt eltűnt.
-Az új kezdő fejezet egyszerűbb, az előző változat haladó anyagai és műhelyei
-régi mentésből tovább használhatók. Nem törlünk állást vagy megvásárolt előnyt.
+AUTOMATIZÁLT ELLENŐRZÉS
+20 sikeres tesztcsoport: node test.mjs.
+Útvonalkeresés, érintés/joystick logika, véges gyűjtés, munkásciklusok,
+mentésvalidálás, verzióátalakítás, egyszeri jutalmak, ellátás, offline termelés,
+anyagfoglalás, nagy gyártási sor és a teljes korai fejezet megőrzött tesztjei.
+Új regressziós tesztek: több mint ezer tényleges munkás-mozgási mintában
+haladási irány és testirány egyezik, kanyarok és ajtóból kilépés mellett is;
+négy további véges kőlelőhely; tiszta érkezési part; egy fő cél;
+összesített időbecslés; épülethez kötött jelzések; stabil panel frissítési útja.
 
-TESZTEK
-19 sikeres ellenőrzési csoport a mellékelt node test.mjs futtatásakor.
-Megtartott alaplogika, útvonal, joystick, véges nyersanyag, munkásciklus,
-étkezés, offline limit, import/export és több sziget megőrzésének tesztjei.
-Új vizsgálatok: 100 darabos gyártás, új anyag hozzáadása folyó munkához,
-helyes levonás/jóváírás, folyamatjelző számai, visszatöltés, nagy távolléti
-idővel sem ismételt jutalom. Alapanyaghiány és sérült számlálók elutasítása.
-Régi részben kész, előre kifizetett 12 elemű sor migrációja: a hátralévő idő
-és mind a 12 eredmény megmarad, nincs újabb anyaglevonás.
-Ács: csak a helyszíni találkozó után adható át az anyag, egyszeri javítás,
-2. szintű műhely és változatlan ezüstegyenleg. A már magasabb szint nem csökken.
-Új játékban későbbre halasztott vasas tartalom, korábbi haladó készlet megőrzése.
-Valódi v3, v4 és két külön v6 mentés vizsgálata: az eredeti anyagok, épület-
-azonosítók, helyek és a kifizetett munka megmaradt. A migráció megismétlése stabil.
-Teljes kezdő fejezet időalapú szimulációja mesterséges készletjóváírás nélkül
-végigér az ács javításán és a kereskedő első anyagvásárlásán.
+Külön meglévő v7 és v3 mentésmintákon is ellenőrizve:
+készletértékek, épületazonosítók és helyek, elért szintek, nyersanyagfogyás,
+folyamatban lévő gyártási adatok, export/import kör visszaállítása.
+A migráció előtti nyers másolat létrejött. A személyes mentés nincs a ZIP-ben.
 
-MOBILMÉRETŰ FELÜLETI PRÓBA
-393×852 méretben a beépített böngészőben, külön személyes adat nélküli tesztcímen.
-Súgó, közvetlen épületkoppintás, szint, csúszka, levonás és munkakezdés ellenőrizve.
-30 fa → 10 deszka beállítás és indítás. Tényleges húzással 69 fa → 23 deszka
-előnézet, ami a régi 12-es korlátot meghaladja. A gomb indítás előtt nem von le.
-A munkajelző újratöltés után is folytatódott, 9/10 állapot képernyőképen rögzítve.
-A bázisnál várakozó ács megjelenik, a beszélgetés után a feladatlista valódi
-javítást ír jutalomként; nincs ezüstjutalom vagy felszerelésvásárlás ebben a panelben.
-A felső feladatsor megnyitja a listát, nincs ismétlődő alsó navigáció.
-Leállított tesztkiszolgáló melletti újratöltés külön ellenőrizve, a világ és
-folyó műhelymunka a helyi csomagból folytatható.
-Az online próbákban nem volt játékból származó konzolhiba.
+BÖNGÉSZŐS ELLENŐRZÉS 393×852 MÉRETBEN
+A működő kőfaragóműhely paneljében a görgetés 281 képponton maradt,
+a fejlesztés gomb téglalapja változatlan maradt (y=773–817). Termelés közben
+is sikerült 2-ről 3. szintre fejleszteni. A csúszkán 6 kő → 2 faragott kő
+kiválasztásánál megjelent az új mennyiség és a folyó munkával együtti becsült idő.
+Az épület feletti, kis jelző kijelölés nélkül is látható.
+A feladatpanelben egy fő feladat és annak szükséges anyagai jelennek meg.
+A leszakadt híd megvizsgálásakor fehér, felül elhelyezett ablak jelent meg,
+a történeti szöveggel, javítási anyagokkal és egy továbblépő gombbal.
+A külön tesztállás importja a normál fájlválasztós felületen történt.
+A 8101-es tesztkiszolgáló leállítása után az oldal újratöltődött és a világ
+betöltődött az offline csomagból, a mentett hídállással és működő munkásokkal.
+A vizsgált játékműveletek nem adtak böngészős JavaScript-hibát.
+
+A mellékelt PNG-k tényleges, futó játékból készültek:
+v12-erkezes.png, v12-allando-jelzesek.png, v12-gyartasi-idobecsles.png,
+v12-stabil-fejlesztes.png, v12-egyetlen-feladat.png, v12-hid-ablak.png,
+v12-offline-folytatas.png.
 
 KORLÁTOK
-Valódi iPhone/Safari teljesítménytesztet nem végeztem. A képernyőméretet
-ellenőriztem, de a telefon natív felső megjelenítését a készüléken kell kipróbálni.
-A világ továbbra is festett izometrikus elemek és 3D karakterek együttese.
-A feldolgozást most szándékosan kezelőfelületi jelző mutatja, nem illesztetlen
-mechanikai animáció. A kereskedő háttérben végzett javításához nincs külön
-új raktárépület-animáció. A játékállás és a folyamat ettől függetlenül mentett.
-A GitHubon futó példány a mellékelt csomag feltöltése után változik meg.
+A teszt mobilméretű asztali böngészőben történt, nem valódi iPhone 15-ön.
+A feldolgozási idő becslés, a játék későbbi ellátási helyzetét nem jósolja meg.
+Az épületjelző képernyőn kívül eltűnik; nem követi külön a játékost.
+Új képanyag nem készült. Ez működési és felületi javítás, a teljes korábbi
+látványtervvel való vizuális egyezést nem állítom. A roncs nagyításkor a
+képernyő szélén részben kilóghat. A korábbi festett műhelyek megmaradtak.
+A JavaScript teszt nem helyettesíti a valódi érintőképernyős használhatóságtesztet.

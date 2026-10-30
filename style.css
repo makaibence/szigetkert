@@ -1439,3 +1439,56 @@ footer {
 #detail .craft-planner .hint {
   font-size: 11px;
 }
+
+/* 0.12: stable live controls and brief, place-specific notices. */
+#detail {
+  overflow-anchor: none;
+}
+#detail .site-head {
+  position: sticky;
+  top: -12px;
+  background: #f3e8cf;
+  z-index: 1;
+  padding: 8px 0;
+}
+.craft-time {
+  font-weight: 650;
+  color: #486137;
+  font-size: 12px;
+  line-height: 1.4;
+}
+#storymodal.place-notice {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 70px);
+  bottom: auto;
+  margin: 0 auto;
+  background: #fffaf0;
+}
+#advancedsettings {
+  margin: 16px 0;
+  border-top: 1px solid #cbbb91;
+  padding-top: 12px;
+}
+#advancedsettings summary {
+  cursor: pointer;
+  padding: 8px 0;
+  font-weight: 650;
+}
+#advancedsettings button,
+.import {
+  margin-top: 8px;
+}
+.task-result {
+  border-top: 1px solid #cdbb92;
+  padding-top: 9px;
+}
+
+#detail .site-actions {
+  position: sticky;
+  bottom: -12px;
+  background: #f3e8cf;
+  padding: 10px 0;
+  margin-bottom: 0;
+  z-index: 2;
+  box-shadow: 0 -8px 12px #f3e8cf;
+}

@@ -14,6 +14,7 @@ import { findPath, walkable } from './navigation.js';
 import { terrain, key, SIZE, regionUnlocked } from './world.js';
 
 const clone = (v) => JSON.parse(JSON.stringify(v));
+export const WRECK_SUPPLIES = Object.freeze({ wood: 8, stone: 3, food: 6, gold: 5 });
 export const BASE_STARTER_SUPPLIES = Object.freeze({ wood: 30, stone: 18, food: 12 });
 export function pendingBaseWelcome(s) {
   const site = s.adventure?.sites.find(
@@ -249,12 +250,8 @@ export function inspectSite(s, id) {
   }
   if (p.kind === 'wreck' && !p.salvaged) {
     p.salvaged = true;
-    Object.assign(s.resources, {
-      wood: s.resources.wood + 8,
-      stone: s.resources.stone + 3,
-      food: s.resources.food + 6,
-      gold: s.resources.gold + 5,
-    });
+    for (const [resource, amount] of Object.entries(WRECK_SUPPLIES))
+      s.resources[resource] += amount;
     s.adventure.items.fragment = 1;
     return {
       ok: true,
