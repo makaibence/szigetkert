@@ -35,13 +35,13 @@ const original = JSON.stringify(old),
   storage = new MemoryStorage();
 storage.setItem(STORE, original);
 const loaded = loadGame(storage);
-assert.equal(loaded.state.version, 3);
+assert.equal(loaded.state.version, 4);
 assert.equal(storage.getItem(BACKUP), original);
 assert.equal(storage.getItem(STORE), original);
 assert.deepEqual(loaded.state.resources, old.resources);
 assert.equal(loaded.state.buildings[0].id, 'building:1');
 saveGame(loaded.state, storage);
-assert.equal(JSON.parse(storage.getItem(STORE)).version, 3);
+assert.equal(JSON.parse(storage.getItem(STORE)).version, 4);
 assert.equal(storage.getItem(BACKUP), original);
 const s = fresh();
 let target;
@@ -81,5 +81,5 @@ invalid.setItem(STORE, 'broken');
 assert.equal(loadGame(invalid).writable, false);
 assert.equal(invalid.getItem(STORE), 'broken');
 console.log(
-  'PASS: v1→v3 mentésmigráció, eredeti biztonsági másolat, stabil épületazonosítók, tartós nyersanyagkészlet, részleges és végleges kitermelés mentése, ismételt jóváírás tiltása, felszabaduló építési hely, sérült mentés védelme.',
+  'PASS: v1→v4 mentésmigráció, eredeti biztonsági másolat, stabil épületazonosítók, tartós nyersanyagkészlet, részleges és végleges kitermelés mentése, ismételt jóváírás tiltása, felszabaduló építési hely, sérült mentés védelme.',
 );

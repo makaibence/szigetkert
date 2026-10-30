@@ -1,6 +1,13 @@
 import { TYPES, resourceTarget, harvestHit, workerCount } from './engine.js';
 import { resourcesAt, key } from './world.js';
-import { walkable, findPath, smoothPath, advanceHero, resourcePath } from './navigation.js';
+import {
+  canStand,
+  walkable,
+  findPath,
+  smoothPath,
+  advanceHero,
+  resourcePath,
+} from './navigation.js';
 
 const paths = new WeakMap();
 const stateFor = (s) => ({ ...s, onlyRevealed: true });
@@ -33,9 +40,9 @@ export function syncWorkers(s) {
         s.workers.push({
           id,
           buildingId: b.id,
-          x: p.x,
-          y: p.y,
-          phase: i ? 'resting' : 'idle',
+          x: b.x,
+          y: b.y,
+          phase: 'inside',
           carried: 0,
           workTime: 0,
           workHits: 0,
@@ -60,7 +67,7 @@ export function findWork(s, w) {
     .flatMap((k) => {
       const [x, y] = k.split(',').map(Number);
       if (Math.hypot(x - owner.x, y - owner.y) > 8) return [];
-      return resourcesAt(x, y).filter(
+      return resourcesAt(x, y, s.worldVersion).filter(
         (n) =>
           n.kind === kind &&
           !s.resourceState[n.id]?.cleared &&
@@ -74,12 +81,22 @@ export function findWork(s, w) {
     })
     .sort((a, b) => distance(a, owner) - distance(b, owner));
   for (const node of candidates) {
-    const path = resourcePath(stateFor(s), w, node);
+    const start = ['inside', 'emerging'].includes(w.phase) ? home(s, owner) : w;
+    const path = start && resourcePath(stateFor(s), start, node);
     if (path) return { node, path };
   }
   return null;
 }
 function returnHome(s, w) {
+  const currentOwner = ownerOf(s, w);
+  if (
+    currentOwner &&
+    Math.abs(w.x - currentOwner.x) < 0.49 &&
+    Math.abs(w.y - currentOwner.y) < 0.49
+  ) {
+    beginDoor(s, w, true);
+    return true;
+  }
   const owner = ownerOf(s, w),
     dest = owner && home(s, owner, w);
   const path = dest && route(s, w, dest);
@@ -90,6 +107,21 @@ function returnHome(s, w) {
   else paths.delete(w);
   return !!path;
 }
+export const supplyFactor = (s) => (s.adventure && s.resources.food <= 0 ? 0.55 : 1);
+function beginDoor(s, w, entering) {
+  const b = ownerOf(s, w),
+    p = home(s, b, w);
+  if (!p) return false;
+  w.phase = entering ? 'entering' : 'emerging';
+  w.doorMotion = {
+    fromX: w.x,
+    fromY: w.y,
+    toX: entering ? b.x : p.x,
+    toY: entering ? b.y : p.y,
+    t: 0,
+  };
+  return true;
+}
 export function updateWorkers(s, dt) {
   dt = Math.max(0, Math.min(dt, 0.15));
   for (const w of syncWorkers(s)) {
@@ -97,15 +129,63 @@ export function updateWorkers(s, dt) {
     if (!b) continue;
     w.action = 'idle';
     if (w.phase === 'resting') {
-      w.rest = Math.max(0, w.rest - dt);
-      if (!w.rest) w.phase = 'idle';
-      else continue;
+      w.phase = 'returning';
+      paths.delete(w);
+    }
+    if (w.phase === 'entering' || w.phase === 'emerging') {
+      if (!w.doorMotion && !beginDoor(s, w, w.phase === 'entering')) continue;
+      const m = w.doorMotion;
+      m.t = Math.min(1, m.t + dt / 0.65);
+      w.x = m.fromX + (m.toX - m.fromX) * m.t;
+      w.y = m.fromY + (m.toY - m.fromY) * m.t;
+      w.action = 'walk';
+      w.targetAngle = Math.atan2(-(m.toX - m.fromX), m.toY - m.fromY);
+      w.angle = w.targetAngle;
+      w.walkPhase = (w.walkPhase || 0) + dt * 0.4;
+      if (m.t < 1) continue;
+      delete w.doorMotion;
+      if (w.phase === 'entering') {
+        s.resources[b.type === 'lumber' ? 'wood' : 'stone'] += w.carried;
+        if (s.adventure) s.resources.food = Math.max(0, s.resources.food - w.carried * 0.12);
+        w.carried = 0;
+        w.phase = 'inside';
+        w.rest = Math.max(
+          1,
+          3 / (TYPES[b.type].rate * 1.3 ** ((b.level || 1) - 1)) -
+            (2 * (w.tripDistance || 0)) / 0.62 -
+            2.2,
+        );
+        w.action = 'idle';
+        w.status = 'Az épületben';
+        continue;
+      }
+      w.phase = 'outbound';
+    }
+    if (w.phase === 'inside') {
+      w.x = b.x;
+      w.y = b.y;
+      w.rest = Math.max(0, (w.rest || 0) - dt);
+      if (w.rest) continue;
+      const work = findWork(s, w);
+      if (!work) {
+        w.status = 'Nincs elérhető nyersanyag. Új területet kell felfedezni.';
+        w.rest = 3;
+        continue;
+      }
+      w.targetId = work.node.id;
+      w.workTime = 0;
+      w.workHits = 0;
+      const p = home(s, b);
+      w.tripDistance = work.path.reduce((v, q, i, a) => v + distance(q, i ? a[i - 1] : p), 0);
+      paths.set(w, work.path);
+      beginDoor(s, w, false);
+      continue;
     }
     if (w.phase === 'idle') {
       const work = findWork(s, w);
       if (!work) {
         w.status = 'Nincs elérhető, felfedezett nyersanyag 8 mezőn belül.';
-        w.phase = 'resting';
+        returnHome(s, w);
         w.rest = 3;
         continue;
       }
@@ -129,7 +209,7 @@ export function updateWorkers(s, dt) {
         if (path) paths.set(w, path);
       }
       // A moved building can invalidate an old route. Replan instead of walking through it.
-      if (path?.length && !walkable(stateFor(s), Math.round(path[0].x), Math.round(path[0].y))) {
+      if (path?.length && !canStand(stateFor(s), path[0].x, path[0].y)) {
         paths.delete(w);
         continue;
       }
@@ -139,7 +219,7 @@ export function updateWorkers(s, dt) {
       }
       if (path.length) {
         w.action = 'walk';
-        advanceHero({ ...s, hero: w }, path, dt);
+        advanceHero({ ...s, hero: w }, path, dt, 0.62 * supplyFactor(s));
       }
       if (!path.length) {
         paths.delete(w);
@@ -153,16 +233,8 @@ export function updateWorkers(s, dt) {
             returnHome(s, w);
             continue;
           }
-          s.resources[b.type === 'lumber' ? 'wood' : 'stone'] += w.carried;
-          w.carried = 0;
-          w.phase = 'resting';
-          w.rest = Math.max(
-            1,
-            3 / (TYPES[b.type].rate * 1.3 ** ((b.level || 1) - 1)) -
-              (2 * (w.tripDistance || 0)) / 0.62 -
-              2.2,
-          );
-          w.status = 'Lerakodás és pihenő';
+          beginDoor(s, w, true);
+          w.status = 'Belép az épületbe';
         }
       }
     }
@@ -175,7 +247,7 @@ export function updateWorkers(s, dt) {
       w.action = node.kind === 'wood' ? 'chop' : 'mine';
       w.status = node.kind === 'wood' ? 'Fát vág' : 'Követ fejt';
       w.targetAngle = Math.atan2(-(node.x - w.x), node.y - w.y);
-      w.workTime += dt;
+      w.workTime += dt * supplyFactor(s);
       while (w.workHits < 3 && w.workTime >= 0.17 + w.workHits * 0.966667) {
         const result = harvestHit(
           s,
@@ -211,6 +283,10 @@ export function produceOfflineWorkers(s, seconds) {
     let budget =
       TYPES[b.type].rate * 1.3 ** ((b.level || 1) - 1) * seconds + (w.offlineRemainder || 0);
     w.offlineRemainder = budget % 1;
+    if (s.adventure) {
+      const full = Math.min(budget, s.resources.food / 0.12);
+      budget = full + (budget - full) * 0.55;
+    }
     budget = Math.floor(budget);
     while (budget > 0) {
       const work = findWork({ ...s, workers: [] }, w);
@@ -221,6 +297,7 @@ export function produceOfflineWorkers(s, seconds) {
       for (let i = 0; i < amount; i++)
         harvestHit(s, { x: n.tileX, y: n.tileY, resourceId: n.id }, Date.now(), false);
       s.resources[n.kind] += amount * n.yield;
+      if (s.adventure) s.resources.food = Math.max(0, s.resources.food - amount * 0.12);
       budget -= amount;
     }
   }

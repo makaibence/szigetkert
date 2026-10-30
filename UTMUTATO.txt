@@ -1,102 +1,75 @@
-SZIGETKERT 0.7 – TELEPÍTÉS ÉS JÁTÉK
+SZIGETKERT 0.8 – INDÍTÁS, FRISSÍTÉS ÉS MENTÉS
 
-Ez a meglévő játék átdolgozott, helyben tesztelt változata. A GitHubon élő oldal
-ettől még nem frissült. A teljes hosszú távú játékterv nincs kész.
+A meglévő projekt első kalandos fejezete. A GitHubon élő oldal nem frissül
+attól, hogy itt elkészült a helyi projekt. A teljes hosszú távú játék még nincs kész.
 
-INDÍTÁS LAPTOPON
-A szigetkert mappában indítsd: python3 serve.py
-Ezután: http://localhost:8080
-Python 3 szükséges. Nincs csomagtelepítés, fordítás, fiók vagy API-kulcs.
-A helyi preview címe csak azon a számítógépen használható. A telefonon a
-localhost a telefont jelenti, ezért oda a közzétett HTTPS-cím kell.
+LAPTOPON
+Csomagold ki a szigetkert-v08-teljes.zip fájlt, nyisd meg a szigetkert mappát.
+Terminálban ebben a mappában: python3 serve.py
+Böngészőben: http://localhost:8080
+Nincs csomagtelepítés vagy fordítás. A fájlra duplán kattintva (file://) nem
+indulnak el megbízhatóan a modulok és az offline rendszer.
 
-FRISSÍTÉS A MÁR MEGLÉVŐ GITHUB-TÁROLÓBAN
-1. Először a jelenlegi játék jobb felső fogaskerekénél válaszd a
-   Mentés exportálása gombot. Őrizd meg a JSON-fájlt.
-2. Csomagold ki a szigetkert-v07-teljes.zip fájlt. A benne lévő szigetkert
-   mappát nyisd meg. Az index.html mellett assets és lib mappát is látsz.
+MÁR MEGLÉVŐ JÁTÉK FRISSÍTÉSE GITHUB PAGESEN
+1. A régi játékban fogaskerék → Mentés exportálása. A JSON-t őrizd meg.
+2. A ZIP-ből a szigetkert mappát nyisd meg. Ebben index.html, assets és lib is van.
 3. GitHub: makaibence/szigetkert → Code → Add file → Upload files.
-4. A szigetkert mappa TARTALMÁT húzd be: a fájlokat ÉS az assets és lib
-   mappákat együtt. A mappák belső szerkezete maradjon meg.
-   Ne a ZIP-et és ne egy új szigetkert nevű külső mappát tölts fel.
-5. Commit changes. Az azonos nevű fájlok frissülnek; a régieket előre nem kell
-   törölni. A játékos mentése a telefonon van, nem ezekben a projektfájlokban.
-6. Várd meg az Actions / Pages sikeres közzétételét. A Pages továbbra is
-   main → /(root) maradhat. A csomag .nojekyll jelölőt is tartalmaz.
-   A lib mappa szándékosan nem vendor nevű, hogy a hagyományos Pages
-   feldolgozása a rejtett jelölő nélkül se hagyja ki a 3D-könyvtárat.
-7. Nyisd meg internet mellett: https://makaibence.github.io/szigetkert/
-8. Régi változatról az első frissítéshez teljesen zárd be a játék főképernyős
-   példányát és az összes hozzá tartozó Safari-lapot, majd indítsd újra.
-   Böngészőadatot ne törölj. A beállításokban Játékverzió: 0.7 legyen.
-   A 0.7-től a Frissítés keresése → Mentés és frissítés gomb segíti ezt.
+4. A szigetkert mappa TARTALMÁT töltsd fel, a fájlokat és az assets/lib mappákat
+   az eredeti belső szerkezettel. Ne a ZIP-et vagy egy külső szigetkert mappát.
+   Az ellenorzes mappát és a személyes mentésedet nem kell feltölteni.
+5. Commit changes. Az azonos nevű fájlok frissülnek. Ne töröld előre a régi fájlokat.
+6. Várd meg az Actions / Pages sikeres közzétételét. A main → /(root) maradhat.
+7. Telefonon internet mellett nyisd meg a játékot. Fogaskerék → Frissítés
+   keresése. Amikor letöltődött: Mentés és frissítés. Várd meg a betöltést.
+   A böngészőadatokat és a mentést NE töröld egy frissítés kedvéért.
+8. A játékverzió 0.8, a mentés v4 lesz. Régi városnál választhatsz a meglévő
+   sziget folytatása és az új kaland között. Az új kaland a régi várost külön
+   megőrzi. A fogaskeréknél később visszaválthatsz, mindkét sziget mentődik.
 
-IPHONE-TELEPÍTÉS
-1. Az iPhone Safarijában nyisd meg a fenti HTTPS-címet.
-2. Várd meg a világ és a karakter betöltését.
-3. A fogaskeréknél várd meg az Offline játékra kész jelzést is.
-4. Safari Megosztás → Hozzáadás a Főképernyőhöz → Hozzáadás.
-   Safari-elrendezéstől függően a Megosztás az oldalmenüben lehet.
-   Ha Megnyitás webalkalmazásként kapcsoló látszik, legyen bekapcsolva.
-5. A Szigetkert ikonnal indítsd. Így a Safari címsora nem foglal helyet.
-6. Az első főképernyős indítás is internet mellett történjen. Ellenőrizd az
-   offline kész jelzést ott is. A Safari és a telepített alkalmazás közötti
-   esetleges külön mentést export/importtal viheted át.
-Utána a laptop nem kell a telefonos játékhoz. A telepített változatot
-repülő üzemmódban is próbáld ki. Értesítést, kamerát, mikrofont nem kérünk.
-Apple útmutató: https://support.apple.com/hu-hu/guide/iphone/iphea86e5236/ios
+IPHONE-RA TELEPÍTÉS
+Safari: https://makaibence.github.io/szigetkert/
+Első betöltés internet mellett. Várd meg a világ és a karakter betöltését,
+a fogaskeréknél pedig az „Offline játékra kész” jelzést.
+Safari Megosztás → Hozzáadás a Főképernyőhöz → Hozzáadás.
+Ha „Megnyitás webalkalmazásként” kapcsolót látsz, legyen bekapcsolva.
+Az új ikonnal indítsd, így a címsor nem foglal helyet. Az első ilyen indításkor
+is ellenőrizd az offline jelzést. A laptop utána nem kell a játékhoz.
+A Safari és a telepített alkalmazás esetleges külön mentése export/importtal
+átvihető. A localhost a telefonon a telefont jelenti, nem a laptopodat.
 
-IRÁNYÍTÁS ÉS FELÜLET
-Üres talajra koppintás: a szőke főszereplő odasétál, akadályokat kerül.
-Fára vagy kőre koppintás: odamegy és három ütést végez, legfeljebb 3 anyagot
-szerez. A fa 72, a kő 120 ütésnyi készletet tartalmaz. Több forduló után
-fogy el; akkor a fa kidől, a kő eltűnik, és a helye felszabadul.
-A régi mentésben már kitermelt objektumok nem jelennek meg újra.
-Húzás egy ujjal: kamera. Két ujj: nagyítás. Új úticél után újra követ a kamera.
-Alul csak Építés és Küldetések van. A készlet kizárólag felül látszik.
-Nincs készletláda a pályán, külön Térkép gomb vagy Szigetnapló.
+IRÁNYÍTÁS
+Egy ujjal a világon húzd és tartsd az ujjad: a lebegő joystick irányába futsz.
+Engedd el: megállsz. Két ujjal mozgatod és nagyítod a kamerát.
+Koppints fára vagy kőre: odafut és dolgozik. Az ismételt gyors koppintások
+korlátozottan gyorsítanak; nem kell minden ütést külön indítanod.
+Koppints helyszínre: megvizsgálás, szükség esetén automatikus megközelítés,
+majd helyreállítás vagy fejlesztés. Nincs szabad termelőépület-lerakás.
+Alul Sziget = megtalált helyszínek és kereskedő; Feladatok = következő cél,
+megőrzött események és nyomok. Nem listázzuk a még fel nem fedezett helyeket.
+Asztali gépen WASD/nyilak is mozgatnak.
 
-ÉPÍTÉS, FEJLESZTÉS, MUNKÁSOK
-Építés → képes kártya → felfedezett, szabad füves hely → Építés.
-A kevés alapanyag miatt meg nem vehető kártyák halványszürkék.
-Az építési hely zöldes/piros jelzést és előnézetet kap.
-Épületre koppintva látható a fejlesztés költsége és az ingyenes áthelyezés.
-Három fejlesztési szint van. Az áthelyezés megőrzi a szintet és az azonosítót.
-Favágótelep/kőbánya: szintenként 1, 2, majd 3 munkás. Elérhető, felfedezett
-nyersanyagot keresnek legfeljebb 8 mezőn belül, odasétálnak, háromszor ütnek,
-és hazaviszik az anyagot. A készlet a visszaérkezéskor nő. A közeli nyersanyag
-előbb elérhető; az épületnél jelzett percenkénti érték névleges becslés.
-Ha nincs járható út vagy nyersanyag, a munkás nem termel láthatatlanul.
-Felfedezhetsz további erdőt, vagy ingyen áthelyezheted a telepet.
-A munkások nem fedeznek fel maguktól új területet.
-A gazdaság, kunyhó és piac továbbra is időalapú termelést használ.
-Nincs külön szomszédsági bónusz. A faültetés és növekedés még nincs benne.
+TERMELÉS ÉS ÉLELEM
+A munkások láthatóan kimennek, gyűjtenek és visszaviszik az anyagot. Belül
+pihennek; ha nincs elérhető, már felfedezett forrás, nem termelnek a semmiből.
+A kijelzett percenkénti érték névleges, az út hossza és az ellátás módosítja.
+Élelem kell a munkásokhoz és fejlesztésekhez. Ha elfogy, lassabban dolgoznak,
+senki nem hal meg. A menedék kis alapellátást ad. A fa/kő készlete véges.
+A távollét legfeljebb 8 órára számít becsült termelést a megismert forrásokból.
 
-TÁVOLLÉT, MENTÉS
-Bezáráskor nem futtatunk mozgó munkásokat. Visszatéréskor legfeljebb 8 órányi
-becsült termelést számolunk el, a már felfedezett, elérhető és véges helyi
-nyersanyagokból. Ha ezek elfogynak, a fa-/kőtermelés megáll.
-A mentés v3. A v1 és v2 automatikusan átvehető, az eredeti adatból egyszeri
-helyi biztonsági másolat készül. Az épületek, készletek, felderítés és átvett
-küldetésjutalmak megmaradnak. A munkás aktuális helye és rakománya is mentődik.
-A kézi gyűjtés és a főszereplő útvonala újranyitáskor megáll, az addig szerzett
-anyag megmarad. A munkások újratervezik az útvonalukat.
-Automatikus mentés van, emellett export/import a jobb felső fogaskeréknél.
-Nincs fiók, felhős szinkron vagy külső adatbázis. A böngészőadatok törlése a
-városodat is törölheti, ezért őrizz meg exportot a Fájlokban.
-Másik cím, port vagy böngésző másik helyi mentést jelent.
+MENTÉS
+Automatikus, helyi mentés; a gyűjtési munkasor, rakomány és függő esemény is
+megmarad. A két sziget egy exportban van. Fogaskerék → Mentés exportálása /
+Mentés importálása. Import az aktív mentést cseréli, előtte exportálj.
+A régi v1/v2/v3 mentés átvehető, az eredeti helyi biztonsági másolatban marad.
+Nincs fiók vagy felhős szinkron. Másik böngésző, cím vagy port másik mentés.
+Az alkalmazás/böngésző adatainak törlése ellen a külön őrzött JSON-export véd.
+Az események és ajánlatok nem járnak le azért, mert bezárod a játékot.
 
-ISMERETT KORLÁTOK
-A látvány javult, de a referencia teljes minősége még nincs elérve.
-A terep és az épületek festett 2D-elemek, a szereplők animált 3D-modellek.
-A kamera fix izometrikus irányú. Nincs forgatható 3D-s sziget.
-A csákány a favágó mozgás átvett ciklusát használja. Külön bányászanimáció,
-kézzel komponált tájrészletek, vízesés, faültetés és új szigetek későbbi munka.
-Az épület szintje egyelőre nem cseréli le az épület grafikáját.
-A munkások egymással még nem ütköznek, az épületeket és tereptárgyakat kerülik.
-Valódi iPhone 15-ön a végső teljesítmény még nincs megmérve. A telefonméretű
-asztali böngészős vizsgálat ezt nem helyettesíti.
+KORLÁTOK
+A referencia teljes grafikai minősége még nincs elérve; a világ festett 2D,
+a szereplők animált 3D-modellek. A bányász mozdulat még átvett favágóklip.
+Valódi iPhone 15-ös teljesítménymérés még szükséges. Ez az első játszható
+kalandrész, nem a teljes történet. Részletes eredmény: ELLENORZES.txt.
 
-FEJLESZTŐI ELLENŐRZÉS
-Node.js mellett: node test.mjs
-A futtatáshoz nem kell a Node. A 3D-fájlok és könyvtárak mind helyben vannak.
+FEJLESZTŐI PRÓBA
+Node.js mellett: node test.mjs. A játék futtatásához Node.js nem szükséges.

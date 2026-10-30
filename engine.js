@@ -1,6 +1,6 @@
 import { SIZE, key, terrain, terrainAt, resourcesAt, liveResources } from './world.js';
 export { SIZE, key, terrain, terrainAt, resourcesAt, liveResources };
-export const VERSION = 3,
+export const VERSION = 4,
   CAP = 8 * 3600;
 export const TYPES = {
   hut: {
@@ -81,7 +81,7 @@ export const productionMultiplier = (b) =>
 export function upgradeCost(b) {
   if (!b || (b.level || 1) >= 3) return null;
   const level = b.level || 1;
-  return { wood: 25 * level, stone: 20 * level, gold: 5 * level };
+  return { wood: 25 * level, stone: 20 * level, food: 10 * level, gold: 5 * level };
 }
 export function upgrade(s, id) {
   const b = s.buildings.find((b) => b.id === id),
@@ -91,10 +91,14 @@ export function upgrade(s, id) {
   b.level = (b.level || 1) + 1;
   return true;
 }
+export function buildingRate(s, b) {
+  return (
+    (s.worldVersion === 2 && b.type === 'hut' ? 0.02 : TYPES[b.type].rate) * productionMultiplier(b)
+  );
+}
 export function rates(s) {
   const r = { wood: 0, stone: 0, food: 0, gold: 0 };
-  for (const b of s.buildings)
-    r[TYPES[b.type].output] += TYPES[b.type].rate * productionMultiplier(b);
+  for (const b of s.buildings) r[TYPES[b.type].output] += buildingRate(s, b);
   return r;
 }
 export function tick(s, now = Date.now(), includeWorkers = true) {
@@ -252,7 +256,7 @@ export function validate(input) {
     b.y < SIZE;
   if (
     !s ||
-    ![1, 2, 3].includes(s.version) ||
+    ![1, 2, 3, 4].includes(s.version) ||
     !s.resources ||
     !Object.keys(RES).every((k) => n(s.resources[k])) ||
     !Array.isArray(s.buildings) ||
@@ -298,7 +302,7 @@ export function validate(input) {
       state.hitsLeft > (match?.[1] === 'tree' ? 72 : 120) ||
       typeof state.cleared !== 'boolean' ||
       state.cleared !== (state.hitsLeft === 0) ||
-      !resourcesAt(Number(match[2]), Number(match[3])).some((r) => r.id === id)
+      !resourcesAt(Number(match[2]), Number(match[3]), s.worldVersion).some((r) => r.id === id)
     )
       throw Error('Hibás nyersanyagállapot.');
   }
@@ -318,7 +322,7 @@ export function validate(input) {
     )
       throw Error('Hibás épületadat.');
   }
-  if (s.worldVersion !== 1) throw Error('Nem támogatott térképverzió.');
+  if (![1, 2].includes(s.worldVersion)) throw Error('Nem támogatott térképverzió.');
   s.workers ||= [];
   if (!Array.isArray(s.workers) || s.workers.length > s.buildings.length * 3)
     throw Error('Hibás munkásadat.');
@@ -337,7 +341,16 @@ export function validate(input) {
       !n(w.y) ||
       w.x >= SIZE ||
       w.y >= SIZE ||
-      !['idle', 'outbound', 'working', 'returning', 'resting'].includes(w.phase) ||
+      ![
+        'idle',
+        'outbound',
+        'working',
+        'returning',
+        'resting',
+        'inside',
+        'entering',
+        'emerging',
+      ].includes(w.phase) ||
       !Number.isInteger(w.carried) ||
       w.carried < 0 ||
       w.carried > 100 ||
@@ -346,6 +359,16 @@ export function validate(input) {
       throw Error('Hibás munkásadat.');
     for (const k of ['workTime', 'workHits', 'rest', 'offlineRemainder', 'walkPhase'])
       if (w[k] != null && !n(w[k])) throw Error('Hibás munkásidő.');
+    if (w.doorMotion) {
+      const m = w.doorMotion;
+      if (
+        !['fromX', 'fromY', 'toX', 'toY', 't'].every((k) => Number.isFinite(m[k])) ||
+        m.t < 0 ||
+        m.t > 1 ||
+        [m.fromX, m.toX, m.fromY, m.toY].some((v) => v < 0 || v >= SIZE)
+      )
+        throw Error('Hibás belépési mozgás.');
+    }
     workerOwners.add(w.id);
   }
   if (new Set(s.buildings.map((b) => b.id)).size !== s.buildings.length)

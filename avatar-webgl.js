@@ -19,7 +19,7 @@ export class AvatarView {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.28;
     this.scene = new THREE.Scene();
-    this.scene.add(new THREE.HemisphereLight(0xfff4d9, 0x65774a, 2.3));
+    this.scene.add(new THREE.HemisphereLight(0xffefda, 0x93734f, 2.1));
     const sun = new THREE.DirectionalLight(0xffe4b6, 3.2);
     sun.position.set(-3, 6, 5);
     this.scene.add(sun);
@@ -108,6 +108,11 @@ export class AvatarView {
       this.mixers.push(mixer);
       this.actions.push(actions);
     }
+    outfit.scene.traverse((mesh) => {
+      if (!mesh.isMesh || mesh.material.name !== 'MI_Peasant') return;
+      mesh.material = mesh.material.clone();
+      if (mesh.name.includes('Body')) mesh.material.color.set('#87b6c2');
+    });
     this.makeTools(outfit.scene);
     this.switchAction('idle', 0);
     this.loaded = true;
@@ -206,7 +211,9 @@ export class AvatarView {
         if (!mesh.isMesh) return;
         if (mesh.material.name === 'MI_Peasant') {
           mesh.material = mesh.material.clone();
-          mesh.material.color.set('#bca487');
+          mesh.material.color.set(
+            mesh.name.includes('Body') ? (id === 'merchant' ? '#91bda6' : '#d9b791') : '#c4ad91',
+          );
         }
         if (mesh.material.name.includes('Hair')) {
           mesh.material = mesh.material.clone();
@@ -225,17 +232,24 @@ export class AvatarView {
   }
   switchAction(state, phase = 0, actor = this) {
     const clip =
-      state === 'walk'
-        ? 'Walk_Loop'
-        : state === 'chop' || state === 'mine'
-          ? 'TreeChopping_Loop'
-          : 'Idle_Loop';
+      state === 'run'
+        ? 'Sprint_Loop'
+        : state === 'walk'
+          ? 'Walk_Loop'
+          : state === 'chop' || state === 'mine'
+            ? 'TreeChopping_Loop'
+            : 'Idle_Loop';
     for (const actions of actor.actions) {
       const next = actions[clip] || actions.Idle_Loop;
       if (actor.activeClip !== clip) {
         for (const action of Object.values(actions)) if (action !== next) action.fadeOut(0.12);
         next.reset().setEffectiveWeight(1).fadeIn(0.12).play();
       }
+      next.setEffectiveTimeScale(state === 'idle' ? 1 : 0);
+      if (state === 'walk' || state === 'run')
+        next.time =
+          ((phase / (state === 'run' ? 0.76 : 0.46)) * next.getClip().duration) %
+          next.getClip().duration;
       if (state === 'chop' || state === 'mine') next.time = phase % this.clipDuration;
     }
     actor.activeClip = clip;
@@ -249,13 +263,17 @@ export class AvatarView {
     this.root.visible = actor === this;
     for (const a of this.actors.values()) a.root.visible = a === actor;
     actor.root.rotation.y = -(Number.isFinite(hero.angle) ? hero.angle : 0);
-    this.switchAction(hero.action || 'idle', hero.workTime || 0, actor);
+    this.switchAction(
+      hero.action || 'idle',
+      ['walk', 'run'].includes(hero.action) ? hero.walkPhase || 0 : hero.workTime || 0,
+      actor,
+    );
     actor.axe.visible = hero.action === 'chop';
     actor.pick.visible = hero.action === 'mine';
     const carrying = !!hero.carried && hero.action !== 'chop' && hero.action !== 'mine';
     actor.carried.visible = carrying && hero.resourceKind !== 'stone';
     actor.stones.visible = carrying && hero.resourceKind === 'stone';
-    for (const mixer of actor.mixers) mixer.update(dt * (hero.action === 'walk' ? 1.4 : 1));
+    for (const mixer of actor.mixers) mixer.update(dt);
     this.renderer.render(this.scene, this.camera);
     return true;
   }

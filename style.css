@@ -281,7 +281,7 @@ nav button.active {
   width: 50px;
   height: 50px;
   grid-row: span 2;
-  background-image: url('./assets/buildings-atlas.png');
+  background-image: url('./assets/buildings-v08.png');
   background-size: 300% 300%;
   background-repeat: no-repeat;
 }
@@ -764,4 +764,227 @@ nav button.active {
   .loadingmark {
     animation: none;
   }
+}
+/* Adventure UI: two floating buttons, stable restoration/upgrade layout. */
+.icon-sites {
+  background-position: 0 100%;
+}
+#joystick {
+  position: absolute;
+  z-index: 7;
+  pointer-events: none;
+  width: 104px;
+  height: 104px;
+  margin: -52px 0 0 -52px;
+  border: 1px solid #fff7;
+  border-radius: 50%;
+  background: #173b4c35;
+  box-shadow: inset 0 0 20px #c6ead51c;
+}
+#stickknob {
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  left: 30px;
+  top: 30px;
+  background: #f5e5bd80;
+  border: 1px solid #fff9;
+  border-radius: 50%;
+  box-shadow: 0 3px 9px #102b3640;
+}
+#detail {
+  display: block;
+  padding: 12px 14px;
+  border-radius: 17px;
+  max-height: 45%;
+  overflow: auto;
+}
+#detail .site-head {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+#detail .site-head > div {
+  min-width: 0;
+  flex: 1;
+}
+#detail .site-head h3 {
+  font-size: 14px;
+  margin: 0;
+  line-height: 1.4;
+}
+#detail .site-head p {
+  font-size: 11px;
+  line-height: 1.45;
+  margin: 4px 0 8px;
+}
+#detail .site-head button {
+  padding: 0;
+  min-height: 28px;
+  width: 28px;
+  flex: 0 0 28px;
+  background: transparent;
+  color: #887956;
+  box-shadow: none;
+}
+.site-rows {
+  display: grid;
+  gap: 5px;
+}
+.site-rows > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+  gap: 10px;
+  font-size: 11px;
+  line-height: 1.5;
+  align-items: start;
+}
+.site-rows span {
+  color: #897650;
+}
+.site-rows b {
+  text-align: right;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+#detail .site-actions {
+  display: flex;
+  margin-top: 10px;
+}
+#detail .site-actions button {
+  width: 100%;
+  min-height: 39px;
+  border-radius: 11px;
+  font-size: 12px;
+  padding: 8px 12px;
+  margin: 0;
+  background: linear-gradient(#9db857, #618639);
+  color: #fff8e4;
+}
+#detail .site-actions button:disabled {
+  filter: grayscale(0.9);
+  opacity: 0.5;
+}
+.site-list {
+  display: grid;
+  gap: 8px;
+}
+.site-list button,
+.event-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  width: 100%;
+  background: #fff8e9;
+  color: #554631;
+  border: 1px solid #d7bd8d;
+  border-radius: 12px;
+  padding: 12px;
+  text-align: left;
+  font-size: 12px;
+}
+.site-list small {
+  font-size: 10px;
+  color: #91805e;
+}
+.event-card span {
+  font-size: 11px;
+  color: #8a754e;
+}
+.quest-story {
+  background: #fff8e9;
+  border: 1px solid #d5bf91;
+  border-radius: 14px;
+  padding: 15px;
+  color: #56472f;
+  font-size: 13px;
+}
+.quest-story small {
+  font-size: 11px;
+  color: #887756;
+}
+.event-card {
+  margin-top: 12px;
+}
+#storymodal {
+  background: linear-gradient(130deg, #fff5dd, #ead8b4);
+  color: #51412f;
+  border: 1px solid #c6ad79;
+  border-radius: 21px;
+  max-width: 370px;
+  width: calc(100% - 36px);
+  padding: 22px;
+  box-shadow: 0 20px 60px #09192366;
+}
+#storymodal h2 {
+  font:
+    24px/1.25 Georgia,
+    serif;
+  margin: 10px 0 14px;
+}
+#storymodal p {
+  font-size: 14px;
+  line-height: 1.65;
+  color: #766243;
+  margin-bottom: 20px;
+}
+.story-kicker {
+  font-size: 10px;
+  letter-spacing: 0.17em;
+  color: #9c7a3f;
+}
+#storyactions {
+  display: grid;
+  gap: 9px;
+}
+#storyactions button {
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #789149;
+  background: linear-gradient(#a2bc62, #708d42);
+  color: #fff8df;
+  font-size: 12px;
+  min-height: 42px;
+}
+#storyactions button:last-child:not(:only-child) {
+  background: transparent;
+  border-color: #c6ae7c;
+  color: #846a3e;
+}
+#storyactions button:disabled {
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+.resource.low {
+  outline: 1px solid #e1b061;
+  outline-offset: -3px;
+  border-radius: 12px;
+}
+.card .art {
+  background-image: url('./assets/buildings-v08.png');
+}
+
+.site-list button {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+.site-picture {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+}
+.site-list b,
+.site-list small {
+  display: block;
+}
+.site-list small {
+  margin-top: 5px;
+}
+
+.remembered {
+  margin-top: 12px;
 }

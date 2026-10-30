@@ -1,48 +1,42 @@
-SZIGETKERT 0.7 – GRAFIKA ÉS FORRÁSOK
+SZIGETKERT 0.8 – MEGJELENÍTÉS ÉS FORRÁSOK
 
-A 0.5 egyszerű geometriai főszereplőjét a meglévő játékmenet megtartásával
-csontvázas, folyamatosan forgatható 3D-s szereplő váltotta. A világ továbbra
-is festett képekből és összefüggő textúrából épül fel, Canvas2D kompozitálással.
-A karakter WebGL2/Three.js rétegen készül, ugyanabba a takarási sorrendbe rajzolva.
+A meglévő Canvas2D világ és helyi Three.js/WebGL karaktermegjelenítés maradt.
+A világ festett 2D-elemekből készül fix izometrikus kamerával, a szereplők
+csontvázas, folyamatosan forgó 3D-modellek. Ez nem teljes 3D-s sziget.
 
-SAJÁT GENERÁLT BITKÉPEK
-Eszköz: beépített imagegen. A mellékelt öttelefonos látványterv stílusreferencia.
-Az alábbi rövid briefek a tervezési szándékot rögzítik, nem szó szerinti promptok.
-assets/nature-atlas.png: 16 különálló, átlátszó hátterű, festett természetobjektum;
-8 fafajta/forma, 3 nagy sziklafajta, kavics, virág, páfrány, bokor, tuskó.
-Meleg bal felső megvilágítás, ferde ortografikus kamera, részletes puha formák.
-assets/buildings-atlas.png: 9 egységes épület, narancsszínű tető, kidolgozott fa,
-kő és kert; kunyhó, fatelep, bánya, farm, piac, raktár, városháza, ház, csónakház.
-Az utolsó négy még csak grafika, nincs hozzájuk kész játékrendszer.
-assets/meadow.png: ismételhető festett rétanyag, fűszálak, természetes zöld/sárga
-foltok; a kód erre épít tisztásokat, partot és földutakat.
-assets/props-atlas.png: 9 egységes készlet- és kezelőfelületi kép, átlátszó háttér.
-A régi világ-atlasz és geometriai karakter biztonsági másolatban megmaradt a
-fejlesztési munkamappában, a futó projekt már nem tölti be őket.
-Az assets/frames.json valódi objektumhatárokat tartalmaz, nem vakon egyenlő
-cellákat vág ki. Ez javítja a képgenerálás egyenetlen cellahatáraiból adódó hibát.
+GENERÁLT SAJÁT KÉPANYAG
+Eszköz: beépített imagegen. Referencia: a korábban elfogadott telefonos terv.
+Új 0.8 képanyag, egységes meleg megvilágítás és festett, részletes stílus:
+assets/nature-v08.png – különböző fák, sziklák, bokrok és apró növényzet.
+assets/buildings-v08.png – egységes termelőépületek, fejlődési változatok.
+assets/terrain-v08.png – fű-, föld-, homok- és erdőtalaj-mintázatok.
+assets/expedition-v08.png – helyreállítandó helyszínek és kalandkellékek.
+assets/props-atlas.png – korábbi készlet- és kezelőfelületi ikonok.
+A forrásképek változatlan PNG-k. A frames.json objektumonkénti körvonalmaszkot
+és határokat tárol: a futó program elkülöníti az elemeket, így egyenetlen
+atlaszelrendezésnél sem rajzol be szomszédos épületdarabot vagy idegen fát.
+Azonosító és grafika szétválasztva; új kép nem törli a várost vagy a kitermelést.
 
-3D-S SZEREPLŐ ÉS MOZGÁSSOROZATOK
-Quaternius, ingyenes Standard csomagok, CC0 licenc, eredeti szövegek az
-assets/character/licenses mappában.
+SZEREPLŐK ÉS ANIMÁCIÓ
+Quaternius, Standard csomagok, CC0. Eredeti licenc az assets/character/licenses
+mappában. Male test/fej/kéz, Male Peasant ruházat, SimpleParted rövid szőke haj.
 https://quaternius.itch.io/universal-base-characters
 https://quaternius.itch.io/modular-character-outfits-fantasy
 https://quaternius.itch.io/universal-animation-library
 https://quaternius.itch.io/universal-animation-library-2
-Alap: Superhero Male fej/nyak/kéz, Male Peasant ruházat, SimpleParted rövid haj.
-A három összehangolt csontváz ugyanazt a 65 csontnevet és klipet használja.
-A hajat szőkére állítottuk, a munkások barna hajú változatot kapnak.
-A takart test geometriája futáskor kimarad, a ruha és fej aránya egységes.
-Idle_Loop, Walk_Loop, TreeChopping_Loop valódi csontanimáció.
-A csákány egyelőre a TreeChopping klipet használja; nem dedikált bányászmozgás.
-A szerszám a kézcsontot követi, az aktuális munkához csak egy eszköz jelenik meg.
-A munkások közös geometriát/textúrákat, de külön csontvázat és animációs állapotot
-használnak. A rakomány a szereplőn látszik. A telefonos teljesítményt még mérni kell.
+65 egyező csont, Idle_Loop, Walk_Loop, Sprint_Loop, Jog_Fwd_Loop és
+TreeChopping_Loop. A futás és járás fázisa a megtett úthoz kötött.
+A csákány jelenleg a TreeChopping klipet használja; nem dedikált bányászanimáció.
+A szerszám kézcsontot követ, egyszerre egy munkaeszköz jelenik meg.
+Az NPC-k külön csontvázat/animációt, közös geometriát és textúrákat használnak.
 
 KÖNYVTÁR
-Three.js 0.186.1, MIT, helyi fájlok a lib/three mappában, LICENSE mellékelve.
-https://threejs.org/docs/pages/AnimationMixer
-https://threejs.org/docs/pages/WebGLRenderer
-Nincs futás közbeni CDN, Itch- vagy Quaternius-letöltés, API vagy fizetős szolgáltatás.
-A legnagyobb színtextúrák feltöltéskor 1024-es korlátot kapnak a GPU-memória miatt.
-A forrás-PNG-k változatlanok. A kezdeti offline csomag mérete kb. 26 MB.
+Three.js 0.186.1, MIT, helyi lib/three mappa, LICENSE mellékelve.
+Nincs futás közbeni CDN, külső adatbázis, API-kulcs vagy fizetős szolgáltatás.
+A képfelbontás és a szereplők tárolása mobilos memóriahasználatra korlátozott.
+
+KOMPROMISSZUMOK
+A referencia még részletesebb, kézzel komponált tájakat mutat. A mostani
+változat közelebb került hozzá, de nincs teljes vizuális egyezés. Különösen
+a folyópartok, szintkülönbségek, természetes érintkezési animációk és a dolgozók
+egymás közti kerülése igényel még munkát. A képes ellenőrzés ezt jelzi.

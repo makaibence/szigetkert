@@ -8,18 +8,21 @@ const canvas = () => {
   return c;
 };
 export class TerrainSurface {
-  constructor(meadow) {
+  constructor(materials, worldVersion = 1) {
+    this.worldVersion = worldVersion;
+    this.materials = materials;
     this.land = canvas();
-    this.create(meadow);
+    this.create(materials);
   }
-  create(meadow) {
+  create(materials) {
+    const meadow = materials.grass;
     // Blur and threshold a continuous occupancy field: no individually outlined shore tiles.
     const raw = canvas(),
       r = raw.getContext('2d');
     r.fillStyle = 'white';
     for (let y = 0; y < SIZE; y++)
       for (let x = 0; x < SIZE; x++)
-        if (terrain(x, y) !== 'water')
+        if (terrain(x, y, this.worldVersion) !== 'water')
           r.fillRect(
             (x + OFFSET - 0.53) * SCALE,
             (y + OFFSET - 0.53) * SCALE,
@@ -54,7 +57,7 @@ export class TerrainSurface {
     const l = this.land.getContext('2d');
     l.drawImage(this.sandMask, 0, 0);
     l.globalCompositeOperation = 'source-in';
-    l.fillStyle = '#e4c594';
+    l.fillStyle = l.createPattern(materials.sand, 'repeat');
     l.fillRect(0, 0, TEX, TEX);
     l.globalCompositeOperation = 'source-atop';
     for (let i = 0; i < 20000; i++) {
@@ -66,10 +69,10 @@ export class TerrainSurface {
     g.fillStyle = '#9ab85c';
     g.fillRect(0, 0, TEX, TEX);
     // The painted detail is repeated at a material scale, not as visible square terrain tiles.
-    const repeat = 420;
+    const repeat = 144;
     for (let y = 0; y < TEX; y += repeat)
       for (let x = 0; x < TEX; x += repeat) g.drawImage(meadow, x, y, repeat, repeat);
-    g.globalAlpha = 0.26;
+    g.globalAlpha = 0.08;
     g.fillStyle = '#b6bd68';
     g.fillRect(0, 0, TEX, TEX);
     g.globalAlpha = 1;
@@ -83,15 +86,45 @@ export class TerrainSurface {
       g.fillStyle = patch;
       g.fillRect(x - r, y - r, r * 2, r * 2);
     }
+    const woodland = canvas(),
+      wc = woodland.getContext('2d');
+    for (let y = 0; y < SIZE; y++)
+      for (let x = 0; x < SIZE; x++)
+        if (terrain(x, y, this.worldVersion) === 'forest') {
+          const cx = (x + OFFSET) * SCALE,
+            cy = (y + OFFSET) * SCALE,
+            r = SCALE * 0.95;
+          const shade = wc.createRadialGradient(cx, cy, 4, cx, cy, r);
+          shade.addColorStop(0, '#000b');
+          shade.addColorStop(1, '#0000');
+          wc.fillStyle = shade;
+          wc.fillRect(cx - r, cy - r, r * 2, r * 2);
+        }
+    wc.globalCompositeOperation = 'source-in';
+    const forestPattern = wc.createPattern(materials.forest, 'repeat');
+    forestPattern.setTransform(new DOMMatrix().scale(0.28));
+    wc.fillStyle = forestPattern;
+    wc.fillRect(0, 0, TEX, TEX);
+    g.drawImage(woodland, 0, 0);
+    woodland.width = 1;
     // A lightly worn clearing around the initial camp, with an irregular edge.
     const cx = (5 + OFFSET) * SCALE,
-      cy = (5 + OFFSET) * SCALE;
+      cy = ((this.worldVersion === 2 ? 10 : 5) + OFFSET) * SCALE;
     const clearing = g.createRadialGradient(cx, cy, 5, cx, cy, 105);
     clearing.addColorStop(0, '#d9c48dc9');
     clearing.addColorStop(0.55, '#cbb87a78');
     clearing.addColorStop(1, '#b9bd6b00');
     g.fillStyle = clearing;
     g.fillRect(cx - 105, cy - 105, 210, 210);
+    if (this.worldVersion === 2) {
+      g.globalCompositeOperation = 'destination-out';
+      const beach = g.createRadialGradient(4 * SCALE, 12 * SCALE, 15, 4 * SCALE, 12 * SCALE, 145);
+      beach.addColorStop(0, '#000');
+      beach.addColorStop(0.45, '#000d');
+      beach.addColorStop(1, '#0000');
+      g.fillStyle = beach;
+      g.fillRect(0, 8 * SCALE, 8 * SCALE, 9 * SCALE);
+    }
     g.globalCompositeOperation = 'destination-in';
     g.drawImage(this.grassMask, 0, 0);
     g.globalCompositeOperation = 'source-over';

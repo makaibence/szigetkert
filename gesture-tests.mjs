@@ -55,3 +55,42 @@ assert.ok(changes > 0);
 console.log(
   'PASS: érintés, húzás, kétujjas nagyítás és középpont, átmenet egy ujjra, megszakítás, nagyítási korlát.',
 );
+const steerCamera = { x: 0, y: 0, zoom: 1 };
+let vector = { x: 0, y: 0 },
+  stick = null,
+  steerTaps = 0;
+attachGestures(canvas, steerCamera, {
+  change() {},
+  tap() {
+    steerTaps++;
+  },
+  steer(v) {
+    vector = v;
+  },
+  stick(p) {
+    stick = p;
+  },
+});
+handlers.pointerdown(e(11, 120, 600));
+handlers.pointermove(e(11, 170, 600));
+assert.ok(vector.x > 0.9 && vector.y === 0);
+assert.equal(steerCamera.x, 0);
+assert.ok(stick);
+handlers.pointerdown(e(12, 210, 600));
+assert.deepEqual(vector, { x: 0, y: 0 });
+assert.equal(stick, null);
+handlers.pointermove(e(12, 260, 600));
+assert.ok(steerCamera.zoom > 1);
+handlers.pointerup(e(12, 260, 600));
+handlers.pointermove(e(11, 180, 610));
+assert.deepEqual(vector, { x: 0, y: 0 });
+handlers.pointerup(e(11, 180, 610));
+assert.equal(steerTaps, 0);
+handlers.pointerdown(e(11, 120, 600));
+handlers.pointermove(e(11, 170, 600));
+handlers.pointercancel(e(11, 170, 600));
+assert.deepEqual(vector, { x: 0, y: 0 });
+assert.equal(stick, null);
+console.log(
+  'PASS: floating joystick, two-finger camera priority, no accidental movement after pinch, release/cancel stops running.',
+);

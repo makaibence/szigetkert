@@ -1,8 +1,9 @@
 // Coordinates are local to the canvas. Pinches keep the world point under the midpoint.
-export function attachGestures(canvas, camera, { change, tap }) {
+export function attachGestures(canvas, camera, { change, tap, steer, stick }) {
   const points = new Map();
   let baseline = null,
-    blocked = false;
+    blocked = false,
+    multiTouch = false;
   const snapshot = () => {
     const p = [...points.values()];
     baseline = { points: p.map((q) => ({ ...q })), zoom: camera.zoom, x: camera.x, y: camera.y };
@@ -15,6 +16,21 @@ export function attachGestures(canvas, camera, { change, tap }) {
     const p = [...points.values()],
       b = baseline;
     if (!b || !p.length) return;
+    if (steer && p.length === 1) {
+      if (multiTouch) return;
+      const dx = p[0].x - p[0].startX,
+        dy = p[0].y - p[0].startY,
+        d = Math.hypot(dx, dy),
+        radius = 52;
+      steer({ x: d > 7 ? dx / Math.max(radius, d) : 0, y: d > 7 ? dy / Math.max(radius, d) : 0 });
+      stick?.({
+        x: p[0].startX,
+        y: p[0].startY,
+        dx: (dx / Math.max(1, d)) * Math.min(d, radius),
+        dy: (dy / Math.max(1, d)) * Math.min(d, radius),
+      });
+      return;
+    }
     if (p.length === 1 && b.points.length === 1) {
       camera.x = b.x + p[0].x - b.points[0].x;
       camera.y = b.y + p[0].y - b.points[0].y;
@@ -47,7 +63,12 @@ export function attachGestures(canvas, camera, { change, tap }) {
     const p = local(e);
     points.set(e.pointerId, { ...p, startX: p.x, startY: p.y });
     canvas.setPointerCapture(e.pointerId);
-    if (points.size > 1) blocked = true;
+    if (points.size > 1) {
+      blocked = true;
+      multiTouch = true;
+      steer?.({ x: 0, y: 0 });
+      stick?.(null);
+    }
     snapshot();
   });
   canvas.addEventListener('pointermove', (e) => {
@@ -65,11 +86,14 @@ export function attachGestures(canvas, camera, { change, tap }) {
     const shouldTap = !cancel && !blocked && points.size === 1;
     points.delete(e.pointerId);
     if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
+    steer?.({ x: 0, y: 0 });
+    stick?.(null);
     if (shouldTap) tap(local(e));
     if (points.size) snapshot();
     else {
       baseline = null;
       blocked = false;
+      multiTouch = false;
     }
   };
   canvas.addEventListener('pointerup', (e) => end(e, false));

@@ -1,3 +1,4 @@
+import { authoredTerrain } from './island-layout.js';
 /** Stable world coordinates and resource identities. Artwork never owns save data. */
 export const SIZE = 41;
 export const key = (x, y) => `${x},${y}`;
@@ -5,8 +6,9 @@ export const noise = (x, y) => {
   const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
   return n - Math.floor(n);
 };
-export function terrain(x, y) {
+export function terrain(x, y, version = 1) {
   if (x < 0 || y < 0 || x >= SIZE || y >= SIZE) return 'water';
+  if (version === 2) return authoredTerrain(x, y, noise);
   // Preserve the original starting island, including existing building sites.
   if (x <= 10 && y <= 10) {
     if ((x - 5) ** 2 + (y - 5) ** 2 > 29) return 'water';
@@ -30,10 +32,10 @@ export function terrain(x, y) {
   return hash < 0.25 ? 'forest' : hash < 0.31 ? 'mountain' : 'grass';
 }
 const definitions = new Map();
-export function resourcesAt(x, y) {
-  const k = key(x, y);
+export function resourcesAt(x, y, version = 1) {
+  const k = version + ':' + key(x, y);
   if (definitions.has(k)) return definitions.get(k);
-  const t = terrain(x, y),
+  const t = terrain(x, y, version),
     result = [];
   const count = t === 'forest' ? 3 : t === 'mountain' ? 1 : 0;
   for (let i = 0; i < count; i++)
@@ -58,15 +60,28 @@ export function resourcesAt(x, y) {
   return result;
 }
 export function liveResources(s, x, y) {
-  return resourcesAt(x, y).filter((r) => !s.resourceState?.[r.id]?.cleared);
+  return resourcesAt(x, y, s.worldVersion).filter((r) => !s.resourceState?.[r.id]?.cleared);
 }
 export function terrainAt(s, x, y) {
-  const base = terrain(x, y);
+  const bridge = s.adventure?.sites?.find((p) => p.kind === 'bridge' && p.x === x && p.y === y);
+  if (bridge?.restored) return 'grass';
+  if (
+    s.adventure?.sites?.some(
+      (p) =>
+        ((p.kind === 'building' && !p.restored) || p.kind === 'wreck' || p.kind === 'marker') &&
+        p.x === x &&
+        p.y === y,
+    )
+  )
+    return 'rubble';
+  const base = terrain(x, y, s.worldVersion);
   return (base === 'forest' || base === 'mountain') && liveResources(s, x, y).length === 0
     ? 'grass'
     : base;
 }
 export function regionUnlocked(s, x, y) {
+  if (s.worldVersion === 2)
+    return x < 15 || !!s.adventure?.sites?.find((p) => p.id === 'bridge' && p.restored);
   return (
     (x <= 11 && y <= 11) ||
     s.unlocked?.includes('main') ||

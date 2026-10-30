@@ -5,5 +5,6 @@ for (const test of [
   'save-tests.mjs',
   'hero-tests.mjs',
   'worker-tests.mjs',
+  'adventure-tests.mjs',
 ])
   await import('./' + test);

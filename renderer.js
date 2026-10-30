@@ -1,6 +1,7 @@
+import { TRAILS } from './island-layout.js';
 import { SIZE, key, terrain, terrainAt, resourcesAt, noise } from './world.js';
 import { placement } from './engine.js';
-import { loadArt } from './art.js';
+import { loadArt, buildingFrame } from './art.js';
 import { TerrainSurface } from './terrain-art.js';
 import { AvatarView } from './avatar-webgl.js';
 const TEX = 2300,
@@ -50,7 +51,7 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
     try {
       avatar = new AvatarView();
       [art] = await Promise.all([loadArt(), avatar.ready]);
-      surface = new TerrainSurface(art.meadow);
+      surface = new TerrainSurface(art.materials, getState().worldVersion);
       ready = true;
       canvas.dataset.webgl = 'ready';
       options.onReady?.();
@@ -99,9 +100,9 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
       ctx.rotate(rotation);
       ctx.translate(-p.x, -p.y);
     }
-    ctx.drawImage(image, sx, sy, sw, sh, left, top, w, h);
+    ctx.drawImage(art.frameImages[atlas][index], left, top, w, h);
     ctx.restore();
-    if (hit && alpha > 0.9) interactive.push({ left, top, w, h, frame, atlas, tile: hit });
+    if (hit && alpha > 0.9) interactive.push({ left, top, w, h, frame, atlas, index, tile: hit });
   }
   function updateFog(s, now) {
     const signature = s.revealed.join(';');
@@ -130,32 +131,59 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
     f.globalAlpha = 1;
     f.filter = 'none';
     f.globalCompositeOperation = 'source-over';
-    fog.dataset.complete = signature;
+    fog.dataset.complete = now - revealStart >= 550 ? signature : '';
   }
   function drawPaths(s) {
     ctx.save();
     ground();
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    for (const b of s.buildings) {
-      const draw = () => {
+    let lines =
+      s.worldVersion === 2
+        ? TRAILS
+        : s.buildings.slice(1).map((b, i) => {
+            const parent = s.buildings
+              .slice(0, i + 1)
+              .sort(
+                (a, c) => Math.hypot(a.x - b.x, a.y - b.y) - Math.hypot(c.x - b.x, c.y - b.y),
+              )[0];
+            return [
+              [b.x, b.y + 0.4],
+              [parent.x, parent.y + 0.4],
+            ];
+          });
+    const pattern = ctx.createPattern(art.materials.dirt, 'repeat');
+    pattern.setTransform(new DOMMatrix().scale(0.0035));
+    for (const line of lines) {
+      const path = () => {
         ctx.beginPath();
-        ctx.moveTo(b.x, b.y + 0.22);
-        ctx.bezierCurveTo(b.x - 0.2, (b.y + 5.25) / 2, (b.x + 5) / 2, 5.4, 5, 5.4);
+        ctx.moveTo(...line[0]);
+        for (let i = 1; i < line.length; i++) {
+          const [ax, ay] = line[i - 1],
+            [bx, by] = line[i],
+            steps = Math.ceil(Math.hypot(bx - ax, by - ay) / 0.1);
+          for (let j = 1; j <= steps; j++) {
+            const x = ax + ((bx - ax) * j) / steps,
+              y = ay + ((by - ay) * j) / steps;
+            if (terrain(Math.round(x), Math.round(y), s.worldVersion) === 'water') ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+        }
         ctx.stroke();
       };
-      ctx.strokeStyle = '#95834d35';
-      ctx.lineWidth = 0.49;
-      ctx.shadowColor = '#b9a46570';
-      ctx.shadowBlur = 5;
-      draw();
-      ctx.shadowBlur = 0;
-      ctx.strokeStyle = '#d4bc83b8';
-      ctx.lineWidth = 0.35;
-      draw();
-      ctx.strokeStyle = '#e4d09b66';
-      ctx.lineWidth = 0.13;
-      draw();
+      ctx.strokeStyle = '#89714333';
+      ctx.lineWidth = 0.53;
+      path();
+      ctx.strokeStyle = pattern;
+      ctx.lineWidth = 0.34;
+      path();
+    }
+    for (const b of s.buildings) {
+      ctx.fillStyle = pattern;
+      ctx.globalAlpha = 0.5;
+      ctx.beginPath();
+      ctx.ellipse(b.x, b.y + 0.1, 0.72, 0.63, 0, 0, 7);
+      ctx.fill();
     }
     ctx.restore();
   }
@@ -178,6 +206,11 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
     const s = getState(),
       selected = getSelected(),
       focus = camera.focus || s.hero;
+    if (surface.worldVersion !== s.worldVersion) {
+      surface = new TerrainSurface(art.materials, s.worldVersion);
+      fogKey = '';
+      revealTimes.clear();
+    }
     unit = Math.min(width / 5.5, 88) * camera.zoom;
     origin = {
       x: width / 2 - (focus.x - focus.y) * unit * 0.72 + camera.x,
@@ -193,7 +226,7 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
     ctx.lineWidth = 1;
     for (let y = 0; y < SIZE; y += 2)
       for (let x = 0; x < SIZE; x += 2) {
-        if (terrain(x, y) !== 'water') continue;
+        if (terrain(x, y, s.worldVersion) !== 'water') continue;
         const p = pos(x + noise(x, y), y + noise(y, x));
         if (!visible(p, 0)) continue;
         ctx.beginPath();
@@ -211,6 +244,23 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
     surface.draw(ctx, ground);
     surface.drawShore(ctx, ground, now);
     drawPaths(s);
+    updateFog(s, now);
+    if (screenFog.width !== Math.round(width) || screenFog.height !== Math.round(height)) {
+      screenFog.width = Math.round(width);
+      screenFog.height = Math.round(height);
+    }
+    const fogScreen = screenFog.getContext('2d');
+    fogScreen.setTransform(1, 0, 0, 1, 0, 0);
+    fogScreen.globalCompositeOperation = 'source-over';
+    fogScreen.fillStyle = fogScreen.createPattern(cloud, 'repeat');
+    fogScreen.fillRect(0, 0, width, height);
+    fogScreen.globalCompositeOperation = 'destination-out';
+    fogScreen.save();
+    ground(fogScreen);
+    fogScreen.drawImage(fog, -OFFSET, -OFFSET, TEX / SCALE, TEX / SCALE);
+    fogScreen.restore();
+    fogScreen.globalCompositeOperation = 'source-over';
+    ctx.drawImage(screenFog, 0, 0, width, height);
     interactive = [];
     const objects = [],
       nowReal = Date.now();
@@ -219,7 +269,7 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
     for (let y = 0; y < SIZE; y++)
       for (let x = 0; x < SIZE; x++) {
         const k = key(x, y);
-        if (!known.has(k) || terrain(x, y) === 'water') continue;
+        if (!known.has(k) || terrain(x, y, s.worldVersion) === 'water') continue;
         const base = pos(x, y);
         if (!visible(base)) continue;
         const building = buildings.get(k);
@@ -231,25 +281,28 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
               ctx.beginPath();
               ctx.ellipse(base.x + unit * 0.1, base.y, unit * 0.56, unit * 0.18, 0, 0, 7);
               ctx.fill();
-              sprite(
-                'village',
-                { hut: 0, lumber: 1, quarry: 2, farm: 3, market: 4 }[building.type],
-                base,
-                unit * 1.42,
-                { x, y, buildingId: building.id },
-              );
+              sprite('village', buildingFrame(building.type, building.level), base, unit * 1.42, {
+                x,
+                y,
+                buildingId: building.id,
+              });
             },
           });
           continue;
         }
-        for (const node of resourcesAt(x, y)) {
+        for (const node of resourcesAt(x, y, s.worldVersion)) {
           const p = pos(node.x, node.y),
             state = s.resourceState?.[node.id],
             cleared = state?.cleared;
           const since = nowReal - (state?.lastHit || 0),
             fall = nowReal - (state?.clearedAt || 0);
-          const scale =
-            node.kind === 'wood' ? (node.variant === 0 || node.variant === 1 ? 0.69 : 0.84) : 0.95;
+          const scale = node.kind === 'wood' ? 0.84 : 0.83;
+          const treeFrame =
+            node.kind === 'wood'
+              ? (noise(Math.floor(x / 3) + 5, Math.floor(y / 3) + 6) < 0.6
+                  ? [0, 1, 0, 2, 1, 0, 3, 1]
+                  : [2, 4, 5, 3, 6, 4, 5, 7])[node.variant]
+              : node.variant;
           const w = unit * scale * node.scale;
           objects.push({
             depth: p.y,
@@ -259,7 +312,7 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
                   const t = fall / 550;
                   sprite(
                     'nature',
-                    node.variant,
+                    treeFrame,
                     { x: p.x + unit * t * 0.15, y: p.y },
                     w,
                     null,
@@ -280,16 +333,20 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
               ctx.ellipse(p.x + unit * 0.12, p.y, unit * 0.32, unit * 0.11, 0, 0, 7);
               ctx.fill();
               const shake = since < 220 ? Math.sin(since * 0.08) * 0.055 * (1 - since / 220) : 0;
-              sprite('nature', node.variant, p, w, { x, y, resourceId: node.id }, shake);
+              sprite('nature', treeFrame, p, w, { x, y, resourceId: node.id }, shake);
             },
           });
         }
         if (terrainAt(s, x, y) === 'grass') {
           // Low, non-blocking plants follow patches; they do not pretend to be harvestable trees.
           const fertility = noise(Math.floor(x / 3) + 19, Math.floor(y / 3) + 11);
-          const count = fertility > 0.5 ? 3 : 1;
+          const count = fertility > 0.65 ? 3 : fertility > 0.4 ? 1 : 0;
           for (let i = 0; i < count; i++) {
-            if (noise(x + i * 7, y + 73) < 0.36) continue;
+            if (
+              noise(x + i * 7, y + 73) < 0.36 ||
+              s.buildings.some((b) => Math.hypot(b.x - x, b.y - y) < 1.05)
+            )
+              continue;
             const p = pos(
               x + (noise(x + i, y + 1) - 0.5) * 0.8,
               y + (noise(y + i, x + 8) - 0.5) * 0.8,
@@ -307,7 +364,7 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
               [-1, 0],
               [0, 1],
               [0, -1],
-            ].some(([dx, dy]) => terrain(x + dx, y + dy) === 'water') &&
+            ].some(([dx, dy]) => terrain(x + dx, y + dy, s.worldVersion) === 'water') &&
             noise(x, y) > 0.55
           )
             objects.push({
@@ -325,7 +382,7 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
           ctx.beginPath();
           ctx.ellipse(p.x, p.y, unit * 0.14, unit * 0.06, 0, 0, 7);
           ctx.fill();
-          const size = unit * 1.35;
+          const size = unit * 1.02;
           avatar.setResolution(size * dpr);
           avatar.draw(s.hero, now / 1000);
           ctx.drawImage(avatar.canvas, p.x - size / 2, p.y - size * 0.775, size, size);
@@ -334,7 +391,12 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
     }
     for (const worker of s.workers || []) {
       const p = pos(worker.x, worker.y);
-      if (!visible(p) || !known.has(key(Math.round(worker.x), Math.round(worker.y)))) continue;
+      if (
+        worker.phase === 'inside' ||
+        !visible(p) ||
+        !known.has(key(Math.round(worker.x), Math.round(worker.y)))
+      )
+        continue;
       objects.push({
         depth: p.y + 0.01,
         draw: () => {
@@ -342,7 +404,7 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
           ctx.beginPath();
           ctx.ellipse(p.x, p.y, unit * 0.11, unit * 0.04, 0, 0, 7);
           ctx.fill();
-          const size = unit * 1.08;
+          const size = unit * 0.92;
           avatar.setResolution(size * dpr);
           const owner = s.buildings.find((b) => b.id === worker.buildingId);
           avatar.draw(
@@ -350,29 +412,62 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
             now / 1000,
             worker.id,
           );
+          ctx.save();
+          ctx.globalAlpha =
+            worker.phase === 'entering'
+              ? 1 - (worker.doorMotion?.t || 0)
+              : worker.phase === 'emerging'
+                ? worker.doorMotion?.t || 0
+                : 1;
           ctx.drawImage(avatar.canvas, p.x - size / 2, p.y - size * 0.775, size, size);
+          ctx.restore();
         },
       });
     }
+    for (const site of s.adventure?.sites || []) {
+      if (!known.has(key(site.x, site.y)) || (site.kind === 'building' && site.restored)) continue;
+      const p = pos(site.x, site.y);
+      if (!visible(p)) continue;
+      const bridge = site.kind === 'bridge',
+        index = bridge ? (site.restored ? 5 : 4) : (site.art ?? 8);
+      objects.push({
+        depth: p.y - (bridge ? unit * 0.7 : 0),
+        draw: () =>
+          sprite(
+            'expedition',
+            index,
+            { x: p.x, y: p.y + (bridge ? unit * 0.8 : 0) },
+            unit * (bridge ? 2.15 : site.kind === 'wreck' ? 1.4 : 1.42),
+            { x: site.x, y: site.y, siteId: site.id },
+          ),
+      });
+    }
+    if (s.adventure?.trader?.active) {
+      const t = s.adventure.trader,
+        p = pos(t.x, t.y);
+      if (known.has(key(t.x, t.y)) && visible(p)) {
+        objects.push({
+          depth: p.y,
+          draw: () => sprite('expedition', 7, p, unit * 0.9, { x: t.x, y: t.y, event: true }),
+        });
+      }
+    }
+    if (s.adventure?.trader?.active) {
+      const t = s.adventure.trader,
+        p = pos(t.x + 0.48, t.y - 0.12);
+      if (known.has(key(t.x, t.y)) && visible(p))
+        objects.push({
+          depth: p.y,
+          draw: () => {
+            const size = unit * 0.92;
+            avatar.setResolution(size * dpr);
+            avatar.draw({ angle: -0.65, action: 'idle' }, now / 1000, 'merchant');
+            ctx.drawImage(avatar.canvas, p.x - size / 2, p.y - size * 0.775, size, size);
+          },
+        });
+    }
     objects.sort((a, b) => a.depth - b.depth);
     for (const o of objects) o.draw();
-    updateFog(s, now);
-    if (screenFog.width !== Math.round(width) || screenFog.height !== Math.round(height)) {
-      screenFog.width = Math.round(width);
-      screenFog.height = Math.round(height);
-    }
-    const fogScreen = screenFog.getContext('2d');
-    fogScreen.setTransform(1, 0, 0, 1, 0, 0);
-    fogScreen.globalCompositeOperation = 'source-over';
-    fogScreen.fillStyle = fogScreen.createPattern(cloud, 'repeat');
-    fogScreen.fillRect(0, 0, width, height);
-    fogScreen.globalCompositeOperation = 'destination-out';
-    fogScreen.save();
-    ground(fogScreen);
-    fogScreen.drawImage(fog, -OFFSET, -OFFSET, TEX / SCALE, TEX / SCALE);
-    fogScreen.restore();
-    fogScreen.globalCompositeOperation = 'source-over';
-    ctx.drawImage(screenFog, 0, 0, width, height);
     const destination = options.destination?.();
     if (destination) {
       const p = pos(destination.x, destination.y);
@@ -387,7 +482,9 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
       const state = s.resourceState?.[harvest.resourceId],
         age = nowReal - (state?.lastHit || 0);
       if (age < 400) {
-        const node = resourcesAt(harvest.x, harvest.y).find((n) => n.id === harvest.resourceId),
+        const node = resourcesAt(harvest.x, harvest.y, s.worldVersion).find(
+            (n) => n.id === harvest.resourceId,
+          ),
           p = pos(node?.x || harvest.x, node?.y || harvest.y),
           t = age / 400;
         ctx.globalAlpha = 1 - t;
@@ -401,33 +498,14 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
       }
     }
     if (selected) {
-      const p = pos(selected.x, selected.y),
-        mode = options.buildMode?.();
-      const result = mode ? placement(s, selected.x, selected.y, mode.ignoreId) : { ok: true };
-      ctx.save();
-      ground();
+      const p = pos(selected.x, selected.y);
+      ctx.strokeStyle = '#ffe0a58a';
+      ctx.fillStyle = '#ffe0a518';
+      ctx.lineWidth = 1.2;
       ctx.beginPath();
-      ctx.moveTo(selected.x - 0.48, selected.y - 0.48);
-      ctx.lineTo(selected.x + 0.48, selected.y - 0.48);
-      ctx.lineTo(selected.x + 0.48, selected.y + 0.48);
-      ctx.lineTo(selected.x - 0.48, selected.y + 0.48);
-      ctx.closePath();
-      ctx.fillStyle = result.ok ? '#c7ed8c45' : '#ec7f6b66';
+      ctx.ellipse(p.x, p.y, unit * 0.48, unit * 0.18, 0, 0, 7);
       ctx.fill();
-      ctx.strokeStyle = result.ok ? '#f9f0b4' : '#ffad94';
-      ctx.lineWidth = 0.025;
       ctx.stroke();
-      ctx.restore();
-      if (mode?.type) {
-        ctx.globalAlpha = 0.56;
-        sprite(
-          'village',
-          { hut: 0, lumber: 1, quarry: 2, farm: 3, market: 4 }[mode.type],
-          p,
-          unit * 1.42,
-        );
-        ctx.globalAlpha = 1;
-      }
     }
     canvas.dataset.sprites = String(objects.length);
   }
@@ -444,14 +522,20 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
       if (u < 0 || v < 0 || u >= 1 || v >= 1) continue;
       const [sx, sy, sw, sh] = item.frame,
         image = art[item.atlas];
-      const px = Math.floor(sx + u * sw),
-        py = Math.floor(sy + v * sh);
-      if (art.pixels[item.atlas][(py * image.naturalWidth + px) * 4 + 3] > 64) return item.tile;
+      const px = Math.floor(u * sw),
+        py = Math.floor(v * sh);
+      if (art.framePixels[item.atlas][item.index][(py * sw + px) * 4 + 3] > 64) return item.tile;
     }
     const p = worldPoint(point),
       x = Math.round(p.x),
       y = Math.round(p.y);
-    return x >= 0 && y >= 0 && x < SIZE && y < SIZE && terrain(x, y) !== 'water' ? { x, y } : null;
+    return x >= 0 &&
+      y >= 0 &&
+      x < SIZE &&
+      y < SIZE &&
+      terrain(x, y, getState().worldVersion) !== 'water'
+      ? { x, y }
+      : null;
   }
   function frame(now) {
     if (!document.hidden && now - lastFrame >= 33) {
@@ -469,7 +553,29 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
+  const thumbnails = new Map();
   return {
+    thumbnail(atlas, index) {
+      if (!ready) return null;
+      const key = atlas + index;
+      if (!thumbnails.has(key)) {
+        const source = art.frameImages[atlas]?.[index];
+        if (!source) return null;
+        const c = document.createElement('canvas');
+        c.width = c.height = 80;
+        const cx = c.getContext('2d'),
+          scale = Math.min(76 / source.width, 76 / source.height);
+        cx.drawImage(
+          source,
+          (80 - source.width * scale) / 2,
+          (80 - source.height * scale) / 2,
+          source.width * scale,
+          source.height * scale,
+        );
+        thumbnails.set(key, c.toDataURL());
+      }
+      return thumbnails.get(key);
+    },
     draw,
     hit,
     worldPoint,

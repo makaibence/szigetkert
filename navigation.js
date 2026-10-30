@@ -1,4 +1,26 @@
-import { SIZE, key, terrainAt, regionUnlocked } from './world.js';
+import { SIZE, key, terrainAt, regionUnlocked, liveResources } from './world.js';
+export function canStand(s, x, y) {
+  const cx = Math.round(x),
+    cy = Math.round(y),
+    t = terrainAt(s, cx, cy);
+  if (
+    x < 0 ||
+    y < 0 ||
+    x >= SIZE - 1 ||
+    y >= SIZE - 1 ||
+    !regionUnlocked(s, cx, cy) ||
+    t === 'water' ||
+    t === 'rubble' ||
+    (s.onlyRevealed && !s.revealed.includes(key(cx, cy)))
+  )
+    return false;
+  if (s.buildings.some((b) => Math.abs(b.x - x) < 0.49 && Math.abs(b.y - y) < 0.49)) return false;
+  for (let a = cx - 1; a <= cx + 1; a++)
+    for (let b = cy - 1; b <= cy + 1; b++)
+      for (const node of liveResources(s, a, b))
+        if (Math.hypot(node.x - x, node.y - y) < (node.kind === 'wood' ? 0.19 : 0.34)) return false;
+  return true;
+}
 export function walkable(s, x, y) {
   return (
     x >= 0 &&
@@ -8,7 +30,8 @@ export function walkable(s, x, y) {
     terrainAt(s, x, y) === 'grass' &&
     regionUnlocked(s, x, y) &&
     (!s.onlyRevealed || s.revealed.includes(key(x, y))) &&
-    !s.buildings.some((b) => b.x === x && b.y === y)
+    !s.buildings.some((b) => b.x === x && b.y === y) &&
+    !(s.adventure?.trader?.active && s.adventure.trader.x === x && s.adventure.trader.y === y)
   );
 }
 export function findPath(s, from, target) {
@@ -52,7 +75,7 @@ export function findPath(s, from, target) {
     );
     for (const n of neighbors) {
       const nk = key(n.x, n.y);
-      if (!seen.has(nk) && walkable(s, n.x, n.y)) {
+      if (!seen.has(nk) && walkable(s, n.x, n.y) && (i !== 0 || lineClear(s, from, n))) {
         seen.set(nk, p);
         queue.push(n);
       }
@@ -87,8 +110,8 @@ export function revealAround(s, hero, radius = 3) {
   s.explored += count;
   return count;
 }
-export function advanceHero(s, path, dt) {
-  let remaining = Math.min(Math.max(dt, 0), 0.15) * 0.62;
+export function advanceHero(s, path, dt, speed = 0.62) {
+  let remaining = Math.min(Math.max(dt, 0), 0.15) * speed;
   while (path.length && remaining > 0) {
     const target = path[0],
       dx = target.x - s.hero.x,
@@ -124,7 +147,7 @@ export function lineClear(s, a, b) {
       [0, 0.12],
       [0, -0.12],
     ])
-      if (!walkable(s, Math.round(x + dx), Math.round(y + dy))) return false;
+      if (!canStand(s, x + dx, y + dy)) return false;
   }
   return true;
 }
@@ -153,10 +176,57 @@ export function smoothPath(s, from, path, precise) {
 export function resourcePath(s, from, node) {
   const raw = findPath(s, from, { x: node.tileX, y: node.tileY });
   if (!raw) return null;
-  const end = raw.at(-1) || from,
-    dx = end.x - node.x,
-    dy = end.y - node.y,
-    d = Math.hypot(dx, dy) || 1;
-  const precise = { x: node.x + (dx / d) * 0.68, y: node.y + (dy / d) * 0.68 };
-  return smoothPath(s, from, raw, precise);
+  const path = smoothPath(s, from, raw),
+    end = path.at(-1) || from,
+    base = Math.atan2(end.y - node.y, end.x - node.x),
+    reach = node.kind === 'wood' ? 0.45 : 0.53;
+  for (const offset of [0, 1, -1, 2, -2, 3, -3, 4]) {
+    const angle = base + (offset * Math.PI) / 4,
+      p = { x: node.x + Math.cos(angle) * reach, y: node.y + Math.sin(angle) * reach };
+    if (lineClear(s, end, p)) {
+      path.push(p);
+      return path;
+    }
+  }
+  return Math.hypot(end.x - node.x, end.y - node.y) <= 0.65 ? path : null;
+}
+
+// Direct control uses the inverse isometric projection, then collision-safe substeps.
+export function driveHero(s, screen, dt, speed = 1.8) {
+  const sx = screen.x || 0,
+    sy = screen.y || 0,
+    m = Math.min(1, Math.hypot(sx, sy));
+  if (m < 0.04) return false;
+  let dx = (sx / 0.72 + sy / 0.38) / 2,
+    dy = (sy / 0.38 - sx / 0.72) / 2;
+  const n = Math.hypot(dx, dy) || 1;
+  dx = (dx / n) * speed * Math.min(0.12, Math.max(0, dt)) * m;
+  dy = (dy / n) * speed * Math.min(0.12, Math.max(0, dt)) * m;
+  const safe = (x, y) =>
+    [
+      [0, 0],
+      [0.12, 0],
+      [-0.12, 0],
+      [0, 0.12],
+      [0, -0.12],
+    ].every(([a, b]) => canStand(s, x + a, y + b));
+  const steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 0.04));
+  let moved = 0;
+  for (let i = 0; i < steps; i++) {
+    const ox = s.hero.x,
+      oy = s.hero.y,
+      nx = ox + dx / steps,
+      ny = oy + dy / steps;
+    if (safe(nx, ny)) {
+      s.hero.x = nx;
+      s.hero.y = ny;
+    } else if (safe(nx, oy)) s.hero.x = nx;
+    else if (safe(ox, ny)) s.hero.y = ny;
+    moved += Math.hypot(s.hero.x - ox, s.hero.y - oy);
+  }
+  if (moved) {
+    s.hero.targetAngle = Math.atan2(-dx, dy);
+    s.hero.walkPhase = (s.hero.walkPhase || 0) + moved;
+  }
+  return moved > 0;
 }

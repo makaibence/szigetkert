@@ -23,6 +23,8 @@ const locomotion = glbJSON(await fs.readFile(new URL('animations.glb', root))),
   work = glbJSON(await fs.readFile(new URL('animations-harvest.glb', root)));
 assert.ok(locomotion.animations.some((a) => a.name === 'Idle_Loop'));
 assert.ok(locomotion.animations.some((a) => a.name === 'Walk_Loop'));
+assert.ok(locomotion.animations.some((a) => a.name === 'Sprint_Loop'));
+assert.ok(locomotion.animations.some((a) => a.name === 'Jog_Fwd_Loop'));
 const chop = work.animations.find((a) => a.name === 'TreeChopping_Loop');
 assert.ok(chop);
 const duration = Math.max(...chop.samplers.map((s) => work.accessors[s.input].max[0]));
