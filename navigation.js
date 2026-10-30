@@ -84,7 +84,13 @@ export function findPath(s, from, target) {
   if (!end) return null;
   const path = [];
   for (let p = end; p; p = seen.get(key(p.x, p.y))) path.push(p);
-  return path.reverse().slice(1);
+  const result = path.reverse().slice(1);
+  // A fractional position in the goal cell still has to reach the actual doorway.
+  if (!result.length && Math.hypot(from.x - end.x, from.y - end.y) > 0.02) {
+    if (!lineClear(s, from, end)) return null;
+    result.push({ x: end.x, y: end.y });
+  }
+  return result;
 }
 export function revealAround(s, hero, radius = 3) {
   const known = new Set(s.revealed);

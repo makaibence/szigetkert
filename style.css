@@ -988,3 +988,82 @@ nav button.active {
 .remembered {
   margin-top: 12px;
 }
+
+/* 0.9: compact common supply state and prepared-food art. */
+.resource:nth-child(3) .ico {
+  background-image: url('./assets/food-v09.png');
+  background-size: contain;
+  background-position: center;
+}
+#supply {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 100px);
+  right: 14px;
+  z-index: 4;
+  min-height: 32px;
+  padding: 6px 12px;
+  border: 1px solid #c4b67c77;
+  border-radius: 12px;
+  background: #233e43ed;
+  color: #f6e8c6;
+  font-size: 11px;
+  box-shadow: 0 3px 8px #102a3433;
+  max-width: calc(100vw - 28px);
+}
+#supply[data-level='low'] {
+  border-color: #daa64b;
+  color: #ffdaa0;
+}
+#supply[data-level='poor'],
+#supply.shortage {
+  border-color: #dd8064;
+  color: #ffd3bc;
+}
+.supply-meter {
+  height: 7px;
+  background: #d8ccb3;
+  border-radius: 7px;
+  overflow: hidden;
+  margin: 10px 0;
+}
+.supply-meter i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #b09f47, #78a64d);
+}
+#storytext {
+  white-space: pre-line;
+  line-height: 1.5;
+}
+.site-rows > div {
+  gap: 12px;
+  align-items: start;
+}
+.site-rows > div > span {
+  min-width: 0;
+  flex: 1;
+}
+.site-rows > div > b {
+  max-width: 62%;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+@media (max-width: 380px) {
+  .site-rows {
+    font-size: 11px;
+  }
+  #detail {
+    padding: 13px;
+  }
+  #supply {
+    font-size: 10px;
+  }
+}
+.site-list button[data-worker] {
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 56px;
+}
+.site-list button[data-worker] span {
+  min-width: 0;
+  width: 100%;
+}

@@ -17,6 +17,7 @@
       <div id="resources" aria-live="off"></div>
       <button id="settings" aria-label="Mentés és beállítások">☰</button>
     </header>
+    <button id="supply" aria-label="Munka és ellátás"></button>
     <button id="nextgoal" aria-label="Ajánlott következő cél"></button>
     <main>
       <div id="world">
@@ -47,17 +48,19 @@
         </button>
       </nav>
     </main>
-    <footer><span id="savestatus">Automatikus mentés</span><span>V0.8</span></footer>
+    <footer><span id="savestatus">Automatikus mentés</span><span>V0.9</span></footer>
     <div id="toast" role="status"></div>
     <dialog id="modal">
       <button id="close" class="close" aria-label="Bezárás">✕</button>
       <h2>Mentés és beállítások</h2>
       <p>A játék automatikusan ment. A fontos események és megkezdett gyűjtés megmaradnak.</p>
+      <button id="backup" hidden>Átalakítás előtti mentés letöltése</button>
       <button id="export">Mentés exportálása</button
       ><label class="import"
         >Mentés importálása<input type="file" id="import" accept="application/json,.json"
       /></label>
       <p id="saveinfo"></p>
+      <button id="help">Így működik a játék</button>
       <button id="switchcampaign">Másik sziget</button>
       <p id="offlinestatus" role="status">Offline fájlok előkészítése…</p>
       <button id="checkupdate">Frissítés keresése</button>

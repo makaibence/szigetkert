@@ -57,6 +57,31 @@ export const LOCATIONS = [
   },
   { id: 'marker', kind: 'marker', x: 20, y: 16, name: 'Régi útjelző', art: 8 },
 ];
+export const EARLY_SITES = [
+  {
+    id: 'garden',
+    kind: 'building',
+    type: 'farm',
+    number: 105,
+    x: 6,
+    y: 6,
+    name: 'Elvadult kert',
+    art: 3,
+    cost: { wood: 10, stone: 4 },
+  },
+  { id: 'forage', kind: 'forage', x: 4, y: 8, name: 'Ehető erdei növények', art: 8 },
+];
+export const EARLY_TRAILS = [
+  [
+    [5, 10],
+    [5, 8],
+    [6, 6],
+  ],
+  [
+    [5, 8],
+    [4, 8],
+  ],
+];
 export const TRAILS = [
   [
     [2, 10],
@@ -82,9 +107,9 @@ export const TRAILS = [
     [28, 25],
   ],
 ];
-export function pathDistance(x, y) {
+export function pathDistance(x, y, version = 2) {
   let best = Infinity;
-  for (const line of TRAILS)
+  for (const line of version >= 3 ? [...TRAILS, ...EARLY_TRAILS] : TRAILS)
     for (let i = 1; i < line.length; i++) {
       const [ax, ay] = line[i - 1],
         [bx, by] = line[i],
@@ -95,17 +120,19 @@ export function pathDistance(x, y) {
     }
   return best;
 }
-export function authoredTerrain(x, y, noise) {
+export function authoredTerrain(x, y, noise, version = 2) {
+  const sites = version >= 3 ? [...LOCATIONS, ...EARLY_SITES] : LOCATIONS;
   const west = ((x - 8) / 7) ** 2 + ((y - 10) / 7) ** 2 < 1;
   const east = ((x - 24) / 15) ** 2 + ((y - 21) / 17) ** 2 < 1 + Math.sin(y * 0.65) * 0.04;
   const neck = x >= 9 && x <= 19 && y >= 9 && y <= 15;
   if (!(west || east || neck)) return 'water';
   if (Math.abs(x - (14 + 0.35 * Math.sin((y - 12) * 0.2))) < 0.72) return 'water';
   if (((x - 26) / 3) ** 2 + ((y - 19) / 2.1) ** 2 < 1) return 'water';
-  if (LOCATIONS.some((p) => p.x === x && p.y === y) || pathDistance(x, y) < 0.85) return 'grass';
+  if (sites.some((p) => p.x === x && p.y === y) || pathDistance(x, y, version) < 0.85)
+    return 'grass';
   if ((x === 3 && y === 8) || (x === 11 && y === 6) || (x === 12 && y === 7)) return 'mountain';
   if ((x === 4 && y === 11) || (x === 4 && y === 12)) return 'forest';
-  if (LOCATIONS.some((p) => p.kind === 'building' && Math.hypot(x - p.x, y - p.y) < 1.65))
+  if (sites.some((p) => p.kind === 'building' && Math.hypot(x - p.x, y - p.y) < 1.65))
     return 'grass';
   const woodland =
     ((x - 8) / 4.3) ** 2 + ((y - 12.2) / 3.8) ** 2 < 1 ||

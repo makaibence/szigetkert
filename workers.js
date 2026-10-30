@@ -1,6 +1,17 @@
 import { TYPES, resourceTarget, harvestHit, workerCount } from './engine.js';
 import { resourcesAt, key } from './world.js';
 import {
+  ensureSupply,
+  beginMeal,
+  recoverWorker,
+  useEnergy,
+  workerEfficiency,
+  supplyFactor,
+  MEAL_FOOD,
+  WORK_SECONDS,
+} from './supply.js';
+export { supplyFactor } from './supply.js';
+import {
   canStand,
   walkable,
   findPath,
@@ -31,6 +42,7 @@ function route(s, w, target) {
 }
 export function syncWorkers(s) {
   s.workers ||= [];
+  ensureSupply(s);
   for (const b of s.buildings.filter((b) => ['lumber', 'quarry'].includes(b.type))) {
     for (let i = 0; i < workerCount(b); i++) {
       const id = `worker:${b.id}:${i}`;
@@ -43,6 +55,7 @@ export function syncWorkers(s) {
           x: b.x,
           y: b.y,
           phase: 'inside',
+          energy: 100,
           carried: 0,
           workTime: 0,
           workHits: 0,
@@ -107,7 +120,6 @@ function returnHome(s, w) {
   else paths.delete(w);
   return !!path;
 }
-export const supplyFactor = (s) => (s.adventure && s.resources.food <= 0 ? 0.55 : 1);
 function beginDoor(s, w, entering) {
   const b = ownerOf(s, w),
     p = home(s, b, w);
@@ -128,6 +140,12 @@ export function updateWorkers(s, dt) {
     const b = ownerOf(s, w);
     if (!b) continue;
     w.action = 'idle';
+    if (
+      s.adventure &&
+      (['outbound', 'working', 'returning'].includes(w.phase) ||
+        (w.phase === 'inside' && !w.recovery && w.rest > 0 && !w.status?.startsWith('Nincs')))
+    )
+      useEnergy(w, dt);
     if (w.phase === 'resting') {
       w.phase = 'returning';
       paths.delete(w);
@@ -146,7 +164,6 @@ export function updateWorkers(s, dt) {
       delete w.doorMotion;
       if (w.phase === 'entering') {
         s.resources[b.type === 'lumber' ? 'wood' : 'stone'] += w.carried;
-        if (s.adventure) s.resources.food = Math.max(0, s.resources.food - w.carried * 0.12);
         w.carried = 0;
         w.phase = 'inside';
         w.rest = Math.max(
@@ -156,7 +173,8 @@ export function updateWorkers(s, dt) {
             2.2,
         );
         w.action = 'idle';
-        w.status = 'Az épületben';
+        w.status = 'Rakomány leadása';
+        if (s.adventure && w.energy <= 15) beginMeal(s, w);
         continue;
       }
       w.phase = 'outbound';
@@ -164,6 +182,8 @@ export function updateWorkers(s, dt) {
     if (w.phase === 'inside') {
       w.x = b.x;
       w.y = b.y;
+      if (s.adventure && !w.recovery && w.energy <= 15) beginMeal(s, w);
+      if (recoverWorker(w, dt)) continue;
       w.rest = Math.max(0, (w.rest || 0) - dt);
       if (w.rest) continue;
       const work = findWork(s, w);
@@ -219,7 +239,7 @@ export function updateWorkers(s, dt) {
       }
       if (path.length) {
         w.action = 'walk';
-        advanceHero({ ...s, hero: w }, path, dt, 0.62 * supplyFactor(s));
+        advanceHero({ ...s, hero: w }, path, dt, 0.62 * workerEfficiency(s, w));
       }
       if (!path.length) {
         paths.delete(w);
@@ -247,7 +267,7 @@ export function updateWorkers(s, dt) {
       w.action = node.kind === 'wood' ? 'chop' : 'mine';
       w.status = node.kind === 'wood' ? 'Fát vág' : 'Követ fejt';
       w.targetAngle = Math.atan2(-(node.x - w.x), node.y - w.y);
-      w.workTime += dt * supplyFactor(s);
+      w.workTime += dt * workerEfficiency(s, w);
       while (w.workHits < 3 && w.workTime >= 0.17 + w.workHits * 0.966667) {
         const result = harvestHit(
           s,
@@ -284,7 +304,9 @@ export function produceOfflineWorkers(s, seconds) {
       TYPES[b.type].rate * 1.3 ** ((b.level || 1) - 1) * seconds + (w.offlineRemainder || 0);
     w.offlineRemainder = budget % 1;
     if (s.adventure) {
-      const full = Math.min(budget, s.resources.food / 0.12);
+      const foodPerUnit =
+        MEAL_FOOD / (WORK_SECONDS * TYPES[b.type].rate * 1.3 ** ((b.level || 1) - 1));
+      const full = Math.min(budget, s.resources.food / foodPerUnit);
       budget = full + (budget - full) * 0.55;
     }
     budget = Math.floor(budget);
@@ -297,7 +319,11 @@ export function produceOfflineWorkers(s, seconds) {
       for (let i = 0; i < amount; i++)
         harvestHit(s, { x: n.tileX, y: n.tileY, resourceId: n.id }, Date.now(), false);
       s.resources[n.kind] += amount * n.yield;
-      if (s.adventure) s.resources.food = Math.max(0, s.resources.food - amount * 0.12);
+      if (s.adventure) {
+        const foodPerUnit =
+          MEAL_FOOD / (WORK_SECONDS * TYPES[b.type].rate * 1.3 ** ((b.level || 1) - 1));
+        s.resources.food = Math.max(0, s.resources.food - amount * foodPerUnit);
+      }
       budget -= amount;
     }
   }

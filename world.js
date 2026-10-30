@@ -8,7 +8,7 @@ export const noise = (x, y) => {
 };
 export function terrain(x, y, version = 1) {
   if (x < 0 || y < 0 || x >= SIZE || y >= SIZE) return 'water';
-  if (version === 2) return authoredTerrain(x, y, noise);
+  if (version >= 2) return authoredTerrain(x, y, noise, version);
   // Preserve the original starting island, including existing building sites.
   if (x <= 10 && y <= 10) {
     if ((x - 5) ** 2 + (y - 5) ** 2 > 29) return 'water';
@@ -80,7 +80,7 @@ export function terrainAt(s, x, y) {
     : base;
 }
 export function regionUnlocked(s, x, y) {
-  if (s.worldVersion === 2)
+  if (s.worldVersion >= 2)
     return x < 15 || !!s.adventure?.sites?.find((p) => p.id === 'bridge' && p.restored);
   return (
     (x <= 11 && y <= 11) ||

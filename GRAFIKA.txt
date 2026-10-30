@@ -1,4 +1,4 @@
-SZIGETKERT 0.8 – MEGJELENÍTÉS ÉS FORRÁSOK
+SZIGETKERT 0.9 – MEGJELENÍTÉS ÉS FORRÁSOK
 
 A meglévő Canvas2D világ és helyi Three.js/WebGL karaktermegjelenítés maradt.
 A világ festett 2D-elemekből készül fix izometrikus kamerával, a szereplők
@@ -40,3 +40,9 @@ A referencia még részletesebb, kézzel komponált tájakat mutat. A mostani
 változat közelebb került hozzá, de nincs teljes vizuális egyezés. Különösen
 a folyópartok, szintkülönbségek, természetes érintkezési animációk és a dolgozók
 egymás közti kerülése igényel még munkát. A képes ellenőrzés ezt jelzi.
+
+0.9 ÉLELEMIKON
+assets/food-v09.png. Beépített imagegen, átlátszó PNG, eredeti kép megőrizve.
+Forrás: exec-b1b60d1f-2302-4d6f-ae3f-f44c854da6ad.png, a Codex generated_images mappájában.
+Végső prompt:
+Use case: stylized-concept. Project asset: one small mobile game resource icon for prepared FOOD, not wheat. A charming hand-painted 3D-effect woven wicker provisions basket containing a crusty bread loaf, a red apple and a small covered earthenware food pot. Cohesive premium cozy isometric island adventure game art, warm natural colors, light from upper left, readable strong silhouette at 24 pixels, softly detailed edges. Single icon centered, fills 85 percent of a square image with generous transparent margin, genuine transparent background, no ground plane, no scenery, no text, no labels, no border, no other separate items.

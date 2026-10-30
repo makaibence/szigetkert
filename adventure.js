@@ -1,25 +1,31 @@
 import { fresh, TYPES, afford, validate as validateCore } from './engine.js';
-import { LOCATIONS } from './island-layout.js';
+import { LOCATIONS, EARLY_SITES } from './island-layout.js';
+import { ensureSupply } from './supply.js';
+import { findPath, walkable } from './navigation.js';
 import { terrain, key, SIZE, regionUnlocked } from './world.js';
 
 const clone = (v) => JSON.parse(JSON.stringify(v));
 export function freshAdventure(now = Date.now(), seed) {
   const s = fresh(now);
   Object.assign(s, {
-    worldVersion: 2,
+    worldVersion: 3,
     buildings: [],
     workers: [],
-    nextBuildingId: 105,
-    resources: { wood: 0, stone: 0, food: 8, gold: 0 },
+    nextBuildingId: 106,
+    resources: { wood: 0, stone: 0, food: 0, gold: 0 },
     hero: { x: 2, y: 10, angle: 0, direction: 'se' },
     revealed: [],
   });
   s.adventure = {
-    revision: 1,
+    revision: 2,
     kind: 'story',
     seed: seed ?? (globalThis.crypto?.getRandomValues(new Uint32Array(1))[0] || Date.now() >>> 0),
     introSeen: false,
-    sites: LOCATIONS.map((p) => ({ ...clone(p), restored: false, inspected: false })),
+    sites: [...LOCATIONS, ...EARLY_SITES].map((p) => ({
+      ...clone(p),
+      restored: false,
+      inspected: false,
+    })),
     items: {},
     decisions: [],
     eventsSeen: [],
@@ -28,10 +34,10 @@ export function freshAdventure(now = Date.now(), seed) {
   };
   for (let x = 0; x < 5; x++)
     for (let y = 8; y <= 12; y++) if (Math.hypot(x - 2, y - 10) <= 2.4) s.revealed.push(key(x, y));
-  return s;
+  return upgradeCampaign(s);
 }
 export function prepareCampaign(s) {
-  if (s.adventure) return s;
+  if (s.adventure) return upgradeCampaign(s);
   const sites = s.buildings.map((b) => ({
     id: 'legacy-' + b.id,
     kind: 'building',
@@ -78,6 +84,51 @@ export function prepareCampaign(s) {
     pending: null,
     nextEventAt: s.explored + 15,
   };
+  return upgradeCampaign(s);
+}
+export function upgradeCampaign(s) {
+  const a = s.adventure;
+  if (!a || !Array.isArray(a.sites)) return s;
+  ensureSupply(s);
+  if (a.revision === 1) {
+    for (const p of a.sites) if (p.type === 'hut') p.cacheClaimed = !!p.inspected;
+    for (const template of EARLY_SITES) {
+      if (a.sites.some((p) => p.id === template.id)) continue;
+      let position;
+      const candidates = [];
+      for (let x = 1; x < 14; x++)
+        for (let y = 2; y < 17; y++)
+          if (
+            terrain(x, y, s.worldVersion) === 'grass' &&
+            !a.sites.some((p) => Math.hypot(p.x - x, p.y - y) < 1.7) &&
+            !s.buildings.some((b) => Math.hypot(b.x - x, b.y - y) < 1.7) &&
+            findPath(s, s.hero, { x, y })
+          )
+            candidates.push({ x, y });
+      candidates.sort(
+        (p, q) =>
+          Math.hypot(p.x - template.x, p.y - template.y) -
+          Math.hypot(q.x - template.x, q.y - template.y),
+      );
+      position = candidates[0];
+      if (position)
+        a.sites.push({
+          ...clone(template),
+          ...position,
+          ...(template.type ? { number: s.nextBuildingId++ } : {}),
+          restored: false,
+          inspected: false,
+        });
+    }
+    a.revision = 2;
+  }
+  for (const p of a.sites) {
+    if (p.id === 'camp') p.name = 'Kezdőbázis';
+  }
+  a.playTime ??= 0;
+  a.nextForageAt ??= 0;
+  a.tutorialSeen ??= false;
+  if (a.pending && !a.pending.target) assignEventTarget(s);
   return s;
 }
 export function switchCampaign(s) {
@@ -104,13 +155,12 @@ export function discoverSites(s) {
   return found;
 }
 export function objective(s) {
-  const wreck = s.adventure.sites.find((p) => p.kind === 'wreck');
-  if (wreck && !wreck.salvaged) return 'Vizsgáld meg a partra sodródott roncsot.';
-  if (!restoredType(s, 'hut')) return 'Keress és állíts helyre egy menedéket.';
-  if (!restoredType(s, 'lumber')) return 'Kövesd az erdei ösvényt. Keress egy régi telepet.';
+  if (!restoredType(s, 'hut')) return 'Keress menedéket a part mentén induló ösvényen.';
+  if (!restoredType(s, 'farm'))
+    return 'A készletek végesek. Keress tartós élelemforrást a sziget ezen részén.';
+  if (!restoredType(s, 'lumber')) return 'Egy régi erdei telep újra munkát adhatna.';
   if (!s.adventure.sites.find((p) => p.kind === 'bridge' && p.restored))
-    return 'Keresd meg és javítsd meg az átjárót.';
-  if (!restoredType(s, 'farm')) return 'Fedezd fel a túlpartot, és gondoskodj az ellátásról.';
+    return 'A megszakadt út túloldalán folytatódhat a felfedezés.';
   return 'Kutasd tovább a sziget rejtett ösvényeit.';
 }
 export function inspectSite(s, id) {
@@ -118,6 +168,27 @@ export function inspectSite(s, id) {
   if (!p || !knownSite(s, p) || Math.hypot(s.hero.x - p.x, s.hero.y - p.y) > 1.8)
     return { ok: false, text: 'Menj közelebb a helyszínhez.' };
   p.inspected = true;
+  if (p.type === 'hut' && !p.cacheClaimed) {
+    p.cacheClaimed = true;
+    s.resources.wood += 30;
+    s.resources.stone += 18;
+    s.resources.food += 30;
+    return {
+      ok: true,
+      text: 'A házban használható készlet maradt: +30 fa, +18 kő, +30 élelem. Ez egyszeri tartalék, a bázis nem termel.',
+    };
+  }
+  if (p.kind === 'forage') {
+    const wait = (s.adventure.nextForageAt || 0) - (s.adventure.playTime || 0);
+    if (wait > 0)
+      return {
+        ok: true,
+        text: `Itt most gyűjtöttél. Újabb adag kb. ${Math.ceil(wait)} másodperc aktív játék után lesz.`,
+      };
+    s.resources.food += 3;
+    s.adventure.nextForageAt = (s.adventure.playTime || 0) + 30;
+    return { ok: true, text: 'Összegyűjtöttél egy kis ehető tartalékot: +3 élelem.' };
+  }
   if (p.kind === 'wreck' && !p.salvaged) {
     p.salvaged = true;
     Object.assign(s.resources, {
@@ -199,80 +270,110 @@ function random(s) {
   s.adventure.seed = n >>> 0 || 1;
   return (n >>> 0) / 4294967296;
 }
-// Internal event combinations. These definitions are not shown before discovery.
+// Contents are revealed only by reaching and inspecting the real object in the world.
 const EVENTS = {
   visitor: {
     title: 'Valaki érkezett az ösvényen',
-    text: 'Egy utazó megáll a menedéknél. Szívesen cserélne, és ismeri a környék néhány régi jelét.',
-    choices: [
-      {
-        id: 'trade',
-        text: 'Cserélek vele',
-        cost: { wood: 4 },
-        reward: { food: 10 },
-        flag: 'welcomed-trader',
-      },
-      { id: 'listen', text: 'Inkább útbaigazítást kérek', flag: 'heard-route', item: 'route' },
-    ],
+    text: 'Egy utazó megállt a régi ház közelében.',
   },
   traces: {
     title: 'Friss nyomok a földben',
-    text: 'Az ösvény mellett szokatlan nyomokat találsz. Egy kis kitérő talán elárulhat valamit.',
-    choices: [
-      {
-        id: 'follow',
-        text: 'Megjelölöm, hogy visszataláljak',
-        flag: 'marked-traces',
-        item: 'trail',
-      },
-      {
-        id: 'study',
-        text: 'Előbb alaposan körülnézek',
-        reward: { stone: 4 },
-        flag: 'careful-observer',
-      },
-    ],
+    text: 'Az ösvénytől távolabb valami szokatlan nyomot hagyott.',
   },
   request: {
     title: 'Kérés a telepről',
-    text: 'Egy dolgozó különös tárgyra bukkant a munka közben. Segítséget kér az átvizsgálásához.',
-    choices: [
-      {
-        id: 'help',
-        text: 'Élelemmel segítek',
-        cost: { food: 3 },
-        item: 'keepsake',
-        flag: 'helped-worker',
-      },
-      {
-        id: 'record',
-        text: 'Együtt feljegyezzük a lelőhelyet',
-        reward: { wood: 3 },
-        flag: 'recorded-find',
-      },
-    ],
+    text: 'A dolgozók egy különös leletet tettek félre a telep közelében.',
   },
   tide: {
     title: 'A víz újabb holmit hozott',
-    text: 'A parton egy kis csomag akadt fenn. Nem tudni, honnan sodródott ide.',
-    choices: [
-      {
-        id: 'open',
-        text: 'Óvatosan kinyitom',
-        reward: { wood: 5, gold: 3 },
-        flag: 'opened-parcel',
-      },
-      { id: 'keep', text: 'Megőrzöm a rajta lévő jelzést', item: 'seal', flag: 'kept-seal' },
-    ],
+    text: 'A part mentén érdemes nyitott szemmel járnod.',
   },
 };
 export function eventView(s) {
   const p = s.adventure.pending;
-  return p ? { ...EVENTS[p.type], id: p.id, variant: p.variant } : null;
+  return p ? { ...EVENTS[p.type], id: p.id } : null;
+}
+export function assignEventTarget(s) {
+  const p = s.adventure.pending;
+  if (!p || p.target) return;
+  if (p.type === 'visitor' && !s.adventure.trader) p.type = 'traces';
+  if (p.type === 'visitor' && s.adventure.trader) {
+    p.target = { x: s.adventure.trader.x, y: s.adventure.trader.y };
+    return;
+  }
+  const candidates = [];
+  for (let x = 1; x < SIZE - 1; x++)
+    for (let y = 1; y < SIZE - 1; y++) {
+      const d = Math.hypot(x - s.hero.x, y - s.hero.y);
+      if (
+        d < 3 ||
+        d > 8 ||
+        !walkable(s, x, y) ||
+        s.adventure.sites.some((v) => Math.hypot(v.x - x, v.y - y) < 1.4)
+      )
+        continue;
+      const coast = [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ].some(([dx, dy]) => terrain(x + dx, y + dy, s.worldVersion) === 'water');
+      candidates.push({
+        x,
+        y,
+        score:
+          random(s) +
+          (s.revealed.includes(key(x, y)) ? 2 : 0) +
+          (p.type === 'tide' && !coast ? 4 : 0),
+      });
+    }
+  candidates.sort((a, b) => a.score - b.score);
+  const target = candidates.find((v) => findPath(s, s.hero, v));
+  if (target) p.target = { x: target.x, y: target.y };
+}
+export function inspectDiscovery(s) {
+  const p = s.adventure.pending;
+  if (
+    !p?.target ||
+    !s.revealed.includes(key(p.target.x, p.target.y)) ||
+    Math.hypot(s.hero.x - p.target.x, s.hero.y - p.target.y) > 1.6
+  )
+    return { ok: false, text: 'Előbb keresd meg és menj közelebb.' };
+  let text;
+  const multiplier = p.variant === 2 ? 1.2 : 1;
+  if (p.type === 'visitor') {
+    s.adventure.items.route = 1;
+    s.adventure.decisions.push('welcomed-trader');
+    text = 'Az utazó megmutat néhány régi útjelet. Az ajánlatait itt, a kocsijánál találod.';
+  } else if (p.type === 'traces') {
+    s.adventure.items.trail = 1;
+    s.adventure.decisions.push('marked-traces');
+    text = 'A nyomok egy megkopott jelhez vezettek. Most már felismered a hasonló útjeleket.';
+  } else if (p.type === 'request') {
+    s.adventure.items.keepsake = (s.adventure.items.keepsake || 0) + 1;
+    text = 'Megvizsgáltad a félretett leletet. Egy megőrzésre érdemes tárgy került hozzád.';
+  } else {
+    const wood = 5 * multiplier,
+      gold = 3 * multiplier;
+    s.resources.wood += wood;
+    s.resources.gold += gold;
+    s.adventure.items.seal = 1;
+    text = `Kinyitottad a partra sodródott csomagot: +${wood} fa, +${gold} arany. A jelzését megőrizted.`;
+  }
+  s.adventure.eventsSeen.push(p.type + ':' + p.id);
+  s.adventure.decisions.push('found:' + p.type);
+  s.adventure.lastDiscovery = { title: EVENTS[p.type].title, text };
+  s.adventure.pending = null;
+  return { ok: true, text };
 }
 export function maybeEvent(s) {
   const a = s.adventure;
-  if (a.pending || s.explored < a.nextEventAt || !a.introSeen) return false;
+  if (a.pending) {
+    assignEventTarget(s);
+    return false;
+  }
+  if (s.explored < a.nextEventAt || !a.introSeen) return false;
+  if (!restoredType(s, 'hut')) return false;
   const pool = ['traces', 'tide'];
   if (restoredType(s, 'lumber')) pool.push('request', 'visitor');
   if (a.decisions.includes('welcomed-trader')) pool.push('visitor');
@@ -314,19 +415,7 @@ export function maybeEvent(s) {
         }
       }
   }
-  return true;
-}
-export function chooseEvent(s, choiceId) {
-  const e = eventView(s),
-    choice = e?.choices.find((c) => c.id === choiceId);
-  if (!choice || !afford(s, choice.cost || {})) return false;
-  for (const [k, v] of Object.entries(choice.cost || {})) s.resources[k] -= v;
-  for (const [k, v] of Object.entries(choice.reward || {}))
-    s.resources[k] += v * (e.variant === 2 ? 1.2 : 1);
-  if (choice.item) s.adventure.items[choice.item] = (s.adventure.items[choice.item] || 0) + 1;
-  s.adventure.decisions.push(choice.flag);
-  s.adventure.eventsSeen.push(s.adventure.pending.type + ':' + s.adventure.pending.id);
-  s.adventure.pending = null;
+  assignEventTarget(s);
   return true;
 }
 const TRADES = {
@@ -338,7 +427,7 @@ const TRADES = {
 };
 export function traderOffers(s) {
   const t = s.adventure.trader;
-  if (!t) return [];
+  if (!t || Math.hypot(s.hero.x - t.x, s.hero.y - t.y) > 1.8) return [];
   return (t.offers || ['wood-food', 'repair-kit'])
     .filter((id) => TRADES[id])
     .map((id) => ({ id, ...TRADES[id], used: t.used?.includes(id) || false }));
@@ -360,7 +449,7 @@ export function validateCampaign(s, depth = 0) {
   prepareCampaign(s);
   const a = s.adventure;
   if (
-    a.revision !== 1 ||
+    ![1, 2].includes(a.revision) ||
     !['story', 'legacy'].includes(a.kind) ||
     !Number.isInteger(a.seed) ||
     a.seed < 0 ||
@@ -390,7 +479,7 @@ export function validateCampaign(s, depth = 0) {
       p.y < 0 ||
       p.x >= SIZE ||
       p.y >= SIZE ||
-      !['wreck', 'building', 'bridge', 'marker'].includes(p.kind) ||
+      !['wreck', 'building', 'bridge', 'marker', 'forage'].includes(p.kind) ||
       typeof p.restored !== 'boolean' ||
       typeof p.inspected !== 'boolean'
     )
@@ -483,6 +572,40 @@ export function validateCampaign(s, depth = 0) {
     )
       throw Error('Hibás gyűjtési folyamat.');
   }
+  const economy = ensureSupply(s);
+  if (
+    economy.revision !== 1 ||
+    !Number.isFinite(economy.supply) ||
+    economy.supply < 0 ||
+    economy.supply > 100
+  )
+    throw Error('Hibás ellátottság.');
+  if (
+    !Number.isFinite(a.playTime) ||
+    a.playTime < 0 ||
+    !Number.isFinite(a.nextForageAt) ||
+    a.nextForageAt < 0 ||
+    typeof a.tutorialSeen !== 'boolean'
+  )
+    throw Error('Hibás kalandidő.');
+  if (
+    a.pending?.target &&
+    (!Number.isInteger(a.pending.target.x) ||
+      !Number.isInteger(a.pending.target.y) ||
+      a.pending.target.x < 0 ||
+      a.pending.target.x >= SIZE ||
+      a.pending.target.y < 0 ||
+      a.pending.target.y >= SIZE)
+  )
+    throw Error('Hibás felfedezési cél.');
+  if (
+    a.lastDiscovery &&
+    (typeof a.lastDiscovery.title !== 'string' ||
+      a.lastDiscovery.title.length > 140 ||
+      typeof a.lastDiscovery.text !== 'string' ||
+      a.lastDiscovery.text.length > 600)
+  )
+    throw Error('Hibás felfedezési eredmény.');
   if (s.archive) {
     if (depth) throw Error('Túl mély mentési archívum.');
     validateCampaign(s.archive, 1);

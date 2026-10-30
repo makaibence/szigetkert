@@ -1,114 +1,79 @@
-SZIGETKERT 0.8 – ÁTALAKÍTÁS ÉS ELLENŐRZÉS
+SZIGETKERT 0.9 – MEGVALÓSÍTÁS ÉS ELLENŐRZÉS
 2026. október 30.
 
-FELMÉRÉS ÉS TERV
-A meglévő játék Canvas2D világot, helyi Three.js karaktermegjelenítést,
-verziózott helyi mentést, útvonalkeresést, véges nyersanyagokat és munkásokat
-használ. Ezek megfelelő alapok, ezért ugyanebben a projektben maradtunk.
-A gazdasági alap, az animált férfikarakter, a dolgozók, az offline csomag és
-az export/import megmaradt. A régi szabad építés és áthelyezés kódja a korábbi
-mentések ellenőrzéséhez megmaradt, az új játék felülete már nem kínálja őket.
+A meglévő projekt folytatása, nem új játék. Canvas2D világ és helyi Three.js
+karakterek megmaradtak. supply.js külön kezeli az energiát, étkezést,
+pihenőt, közös ellátottságot és a tervezett fogyasztást.
+A tartalom és mentés a grafikától továbbra is független azonosítókat használ.
 
-A fő eltérés a referencia és a korábbi játék között a ritkás, ismétlődő terep,
-a túl nagy talajmintázat, az atlaszok hibás képkivágása és a felfedezett
-objektumokra is rárajzolt köd volt. Nem pusztán színeket cseréltünk.
-Egységesebb új természet-, épület-, talaj- és kalandgrafika, pontos objektum-
-maszkok, sűrűbb erdőfoltok és kisebb léptékű talajtextúra készült.
-A fix kamera és a festett környezet megtartása a részletességet és az offline
-méretet szolgálja. A folyamatosan forduló szereplők tényleges 3D-modellek.
-A teljes világ 3D-re átírása önmagában nem garantálna jobb művészeti minőséget.
-
-ELSŐ JÁTSZHATÓ SZAKASZ
-Hajótörés utáni kis tengerpart, rövid bevezető, átvizsgálható roncs, állandóan
-megőrzött felfedezés. A helyszíneket meg kell találni és megvizsgálni, majd
-anyagból helyreállítani. A menedék után korán elérhető a dolgozókra építő
-termelés. Egy helyreállítandó átjáró valóban akadályozza az átkelést, javítása
-új területet tesz járhatóvá. A további tartalmat ez a dokumentum nem sorolja fel.
-A célokat rövid, okkal és következménnyel járó feladatok jelzik. Ez az első
-fejezet alapja, nem egy már kész, sokórás történet.
+BIZTONSÁGI MÁSOLAT
+A módosítás előtti teljes 0.8 forrás külön munkamappában megmaradt, a korábbi
+0.8 teljes ZIP is rendelkezésre áll. A játékba v1–v4 nyers mentésmásolatot
+készítő migráció került. A saját telefon jelenlegi állásához nincs közvetlen
+hozzáférés: ott a frissítés első megnyitásakor készül el a helyi másolat.
+Személyes mentés és tesztmentés nincs a nyilvánosan feltölthető ZIP-ben.
 
 MEGVALÓSULT
-• Lebegő joystick: egy ujjal húzás és nyomva tartás = futás. Két ujj = kamera
-  és nagyítás. A kétujjas mozdulat után nincs véletlen karakterindulás.
-• Mozgásirányba forduló 3D-karakter, valódi Sprint animáció, távolsághoz kötött
-  lépésfázis. Fára/kőre koppintva automatikus, akadálykerülő megközelítés.
-• Fánál kb. 0,45, kőnél 0,53 világméretű megközelítési pont. Ha a szerszámhoz
-  megfelelő hely nem érhető el, nincs távoli, láthatatlan ütés.
-• Ismételt gyors koppintás szándékosan gyorsít, de egyetlen munkasor van,
-  legfeljebb 6 hátralévő ütés és 2,4-szeres gyorsítás. Jóváírás csak az ütéskor.
-• Véges fa/kő, tartós kitermelési állapot, eltűnő kimerült nyersanyag.
-• Munkások: épületen belüli pihenés, ajtón kilépés, odaút, munka, rakomány,
-  visszaút, belépés. Anyag csak visszaszállításkor jár. Nincs forrás nélküli
-  láthatatlan kitermelés; a tétlen dolgozó belül vár és új feladatot keres.
-• Élelem a dolgozók ellátásához és fejlesztéshez kell. Nulla élelemnél a munka
-  lassabb, senki nem hal meg. A menedék kis alapellátást is biztosít.
-• Rögzített helyszínek, helyreállítás, három fejlesztési szint, 1–3 dolgozó.
-• Feltételek és mentett véletlenállapot alapján választott események, többféle
-  döntés, megmaradó nyomok és használható tárgy. Nincsenek lejáró események.
-• Megjelenő kereskedő, változó, véges ajánlatok. A megvett ajánlat nem váltható
-  be újra; a megmaradt ajánlatot később is elérheted.
-• Két alsó gomb: Sziget és Feladatok. Kompakt készletsáv, rendezett fejlesztési
-  panel, beállításoknál mentés és frissítés, ismételt készletkijelzés nélkül.
+Nem termelő kezdőbázis egyszeri készlettel. Korai kert és gyűjtögetési tartalék.
+Egyetlen élelem-erőforrás készételes kosárikonnal. Érthetően megnevezett
+épületteljesítmény, termelés és fogyasztási terv.
+Mentett egyéni energia, automatikus 20–40 mp-es pihenő és étkezés, közös
+ellátottság és hiány esetén lassabb munka. Energiajelzés csak szükség esetén.
+Kompakt közös jelző, részletek koppintásra. A fogyasztás és készletidő becslés,
+a valós levonás étkezésenként történik, nem egy kitalált folyamatos mérőszám.
+A feladatlista nem ad távoli választást vagy jutalmat. A kereshető objektum
+és a személyes megközelítés oldja fel az eredményt. A korábbi döntések megmaradnak.
+Rövid történeti bevezető és bármikor újraolvasható irányítási/ellátási segítség.
 
-MENTÉSVÉDELEM
-Az átalakítás előtt a böngésző tényleges játékállását exportáltuk:
-outputs/biztonsagi-mentes-atalakitas-elott-2026-10-30.json.
-Ebben 4 épület és 2 munkás volt. A régi teljes projekt ZIP-je is megmaradt.
-A személyes mentés NINCS benne a nyilvánosan feltölthető projektcsomagban.
-A v1/v2/v3 mentés v4-re átvehető; régi városnál a régi térkép marad. Az eredeti
-nyers mentésből egyszeri helyi biztonsági másolat készül írás előtt.
-Új történeti sziget indításakor a régi város külön, visszaváltható állapotként
-ugyanabban a mentésben marad. Mindkét ág exportálható egy JSON-ban.
-A grafika fájlneve nem az épület vagy nyersanyag azonosítója.
-Az útvonalak újratervezhetők, a gyűjtési munkasor, rakomány, esemény és döntés
-mentett adat. Sérült import nem írja felül a meglévő mentést.
-Nincs felhő, fiók vagy böngészők közötti automatikus szinkron. Böngészőadat-
-törlés ellen továbbra is a külön megőrzött export véd.
+MUNKÁSÚTVONAL-HIBA
+Hosszabb próbán a favágók ugyanazon mező szélén ragadtak a bejárat előtt:
+a kerekített mező már cél volt, de a tényleges pozíció még fél mezővel odébb.
+Az üres útvonal ezért végtelen újratervezést okozott. A kereső most a pontos
+célpontig is odavezeti a karaktert. A megmaradt rakomány kétszerezés nélkül
+leadódik. A javítás régi megakadt dolgozók újratöltött állapotára is működik.
 
-TÉNYLEGES ELLENŐRZÉS
-node test.mjs: minden ellenőrzés sikeres. Ide tartozik a korábbi gazdasági
-logika, v1–v4 migráció, két sziget visszaválthatósága, eredeti mentésmásolat,
-valós hídkorlát és helyreállítás, útvonalkeresés, joystick iránya/ütközése,
-1000 ismételt gyűjtési kérés korlátja, mentett munkasor, munkások teljes köre,
-élelmiszerhiány, események/döntések és véges kereskedői ajánlatok.
+AUTOMATIKUS ELLENŐRZÉS
+node test.mjs: valamennyi ellenőrzés sikeres. Új tesztek:
+– a ház készlete egyszeri, a ház idővel sem termel;
+– a kezdőkészletből a kert és fatelep elindítható híd és kézi grind nélkül;
+– gyűjtögetés ismételt kattintása nem ad korlátlan élelmet;
+– a félbehagyott étkezés mentve folytatható, a már fizetett ételt nem vonja le újra;
+– ételhiány hosszabb pihenőt és részleges feltöltődést ad, nincs halál vagy negatív étel;
+– offline termelés nem meríti az egyéni energiát vagy a közös ellátottságot;
+– olvasott nyom nem ad jutalmat, a tényleges találat csak egyszer teljesül;
+– hibás energia/pihenő/ellátottság visszautasítva;
+– v4 nyers mentés biztonsági másolata az első írás előtt létrejön;
+– archivált város visszaváltáskor megmarad;
+– a bejárat mezőjének szélén álló dolgozó valóban leadja a rakományt.
+Külön 0.8-as kóddal előállított valódi v4 történeti mentés átvétele is sikeres:
+az épületek, szintek, készletek, kitermelés és túlparti gazdaság változatlan;
+csak az új korai helyszín és szükséges új állapotok kerültek hozzá.
+15 perc szimulált munkavégzésben a korábban megakadó két favágó ismét anyagot
+szállított: az elkülönített próba faértéke 80-ról 275-re nőtt.
 
-A tényleges, 4 épületes személyes biztonsági exportot is külön ellenőriztem:
-a migráció, új kaland indítása, majd visszaváltás változatlan épületeket és
-nyersanyagkészletet adott vissza. A helyi saját játék már 0.8-ra frissült,
-a megőrzött régi város / új kaland választóképernyőjén maradt.
+BÖNGÉSZŐS PRÓBA
+393×852-es mobilnézetben valódi UI-műveletekkel: történeti kezdés, súgó,
+joystickos felfedezés, bázis megközelítése, egyszeri 30/18/30 készlet átvétele,
+helyreállítás, 0 termelés, import, közös ellátási panel, munkásenergia,
+gazdaság 9 élelem/perc kijelzése, csak nyomot adó feladatlista, világban
+megtalált objektum egyszeri teljesítése és pontos visszajelzése.
+A próbamentések elkülönített helyi címen futottak, a saját várost nem írták felül.
 
-393 × 852 képpontos böngészőben tényleges felületi próbák:
-– új hajótöréses indulás, roncs és menedék helyreállítása;
-– joystickos mozgás és ködfelfedezés;
-– átjáró javítása előtt/után, karakter a hídon;
-– 2. → 3. szint fejlesztés, levont költség, három dolgozó, nem túlcsorduló panel;
-– esemény megőrzése oldalújratöltés után, választás, kereskedés egyszeri beváltása;
-– UI-n importált és exportált v4 állapot, benne a fejlesztés és kereskedői készlet;
-– leállított helyi kiszolgáló mellett teljes újratöltés: terep, 3D-karakterek és
-  felület működött, böngészőkonzol-hiba nélkül. Nincs futás közbeni CDN.
-A helyi asztali mérés kb. 29 kép/másodpercet jelzett 132 objektumnál. Ez NEM
-valódi iPhone 15 mérés; a telefon melegedése, akkumulátora és képkockaidői még
-külön ellenőrzendők. A kétujjas érintés automatizált gesztustesztet kapott,
-a valódi mobilos egykezes kényelmet a telefonon kell véglegesíteni.
+KORLÁTOK
+Ez működő játékszabály-változat, a 2 perc / 2 élelem / 20–40 mp számok játékpróba
+után még hangolhatók. A közös ellátottság az étkezések sikerét követi,
+a tervezett fogyasztás teljes terhelésre becsült. A távolléti termelés becslés,
+nem minden munkásút képkockánkénti szimulációja.
+Új búza-, vas-, szén- vagy téglakészlet még nincs: nincs őket használó új fejezet.
+A referencia teljes látványminősége nem került újra elértnek nyilvánításra.
+A bányász még átvett favágóklipet használ; a munkások egymás közt nem kerülnek.
+Valódi iPhone 15-ös érintéses, hő- és akkumulátorpróba nem áll rendelkezésre.
 
-KÉPES ÖSSZEHASONLÍTÁS
-osszehasonlitas-v08.html és .png: referencia, korábbi saját város, új kezdés,
-valamint tényleges fejlesztési és offline képernyők. A jelenetek különböznek,
-nem azonos kameraállású grafikai mérésről van szó.
-
-ŐSZINTE MINŐSÉGI KORLÁTOK ÉS KÖVETKEZŐ SZAKASZ
-A referencia teljes színvonalát még NEM értük el. A részletesebb képanyag és
-mozgó 3D-szereplők ellenére a táj még több kézzel komponált apró helyszínt,
-természetesebb folyópartot, szintkülönbséget, árnyékfinomítást igényel.
-A víz nem valódi 3D-s folyadék; nincs kész vízesés vagy szabad kameraforgatás.
-A csákány jelenleg a favágóklipet használja külön szerszámmal. Dedikált,
-célpontmagassághoz igazított bányászat és pontos kéz–felület kontaktus még kell.
-A munkások egymást nem kerülik külön; akadályokat és épületeket igen.
-A kereskedő egyelőre az érkezése után a menedéknél tartózkodik, nem hajózik
-végig animált útvonalon. A változatosság többféleképpen kombinált, előre írt
-helyzetekből készül, nem korlátlan mesterséges intelligenciás történetírás.
-További fejezetek, új szigetek, mélyebb szereplői történetek, valódi fejtörők,
-erdőültetés és lakosságszimuláció későbbi fejlesztés. A mostani élelemrendszer
-nem állítja, hogy már teljes demográfiát modellez.
-A következő munka a pálya művészeti finomítása, dedikált bányászanimáció és
-valódi telefonos játékpróba legyen, majd csak ezután több történeti tartalom.
+VÉGSŐ OFFLINE ÉS FELÜLETI PRÓBA
+A végleges csomaggal a helyi kiszolgálót leállítottam, majd a migrált v4→v5
+próbaállást teljesen újratöltöttem. A világ, karakterek, élelemikon, ellátási
+rendszer és a megőrzött, még nem teljesített nyom betöltött; konzolhiba nem volt.
+393×852-es nézetben nem volt vízszintes túlcsordulás. A helyi böngésző kb.
+29 kép/másodpercet jelzett 175 objektumnál, ez nem valódi iPhone-mérés.
+A saját korábbi helyi előnézet 0.9-re frissült, a készletek megmaradtak;
+a választóképernyőn nem indítottam helyetted új kalandot.

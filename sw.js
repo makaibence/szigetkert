@@ -1,4 +1,4 @@
-const CACHE = 'szigetkert-shell-v8-release-5';
+const CACHE = 'szigetkert-shell-v9-release-5';
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'ACTIVATE_UPDATE') self.skipWaiting();
 });

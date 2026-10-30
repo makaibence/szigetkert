@@ -11,7 +11,7 @@ import {
   discoverSites,
   maybeEvent,
   eventView,
-  chooseEvent,
+  inspectDiscovery,
   traderOffers,
   trade,
   siteCost,
@@ -22,7 +22,7 @@ import { queueGather, advanceGathering } from './gathering.js';
 import { loadGame, saveGame, STORE } from './save.js';
 import { syncWorkers, updateWorkers, produceOfflineWorkers } from './workers.js';
 const s = freshAdventure(Date.now(), 12345);
-assert.equal(s.worldVersion, 2);
+assert.equal(s.worldVersion, 3);
 assert.ok(walkable(s, 2, 10));
 assert.equal(s.buildings.length, 0);
 assert.deepEqual(validateCampaign(structuredClone(s)), s);
@@ -59,7 +59,7 @@ old.resources.wood = 777;
 old.buildings[0].level = 2;
 const legacy = prepareCampaign(validate(structuredClone(old)));
 const next = switchCampaign(legacy);
-assert.equal(next.worldVersion, 2);
+assert.equal(next.worldVersion, 3);
 assert.equal(next.archive.resources.wood, 777);
 assert.equal(next.archive.buildings[0].level, 2);
 const back = switchCampaign(next);
@@ -82,7 +82,18 @@ assert.equal(loaded.state.resources.wood, 777);
 assert.equal(storage.getItem('szigetkert.backup.pre-adventure'), raw);
 assert.equal(storage.getItem(STORE), raw);
 // Randomness is persisted; decisions can produce an item/flag rather than only currency.
-const e1 = freshAdventure(Date.now(), 77);
+function eventReady(seed) {
+  const q = freshAdventure(Date.now(), seed),
+    base = q.adventure.sites.find((p) => p.id === 'camp');
+  revealAround(q, base, 2);
+  Object.assign(q.hero, findPath(q, q.hero, base).at(-1));
+  inspectSite(q, 'camp');
+  restoreSite(q, 'camp');
+  q.adventure.introSeen = true;
+  q.explored = 25;
+  return q;
+}
+const e1 = eventReady(77);
 e1.adventure.introSeen = true;
 e1.explored = 25;
 const e2 = structuredClone(e1);
@@ -94,12 +105,18 @@ e1.explored = 999;
 assert.equal(maybeEvent(e1), false);
 assert.equal(JSON.stringify(e1.adventure.pending), pending);
 const event = eventView(e1);
-assert.ok(chooseEvent(e1, event.choices.at(-1).id));
+assert.equal(event.choices, undefined);
+assert.equal(inspectDiscovery(e1).ok, false);
+const actual = e1.adventure.pending.target;
+revealAround(e1, actual, 2);
+Object.assign(e1.hero, actual);
+assert.ok(inspectDiscovery(e1).ok);
+assert.equal(inspectDiscovery(e1).ok, false);
 assert.ok(e1.adventure.decisions.length);
 assert.equal(e1.adventure.pending, null);
 const variants = new Set();
 for (let seed = 1; seed < 60; seed++) {
-  const q = freshAdventure(Date.now(), seed * 78913);
+  const q = eventReady(seed * 78913);
   q.adventure.introSeen = true;
   q.explored = 20;
   maybeEvent(q);
@@ -183,6 +200,8 @@ merchant.adventure.trader = {
   offers: ['repair-kit', 'wood-food'],
   used: [],
 };
+merchant.hero.x = 6;
+merchant.hero.y = 10;
 const offerGold = merchant.resources.gold;
 assert.equal(traderOffers(merchant).length, 2);
 assert.ok(trade(merchant, 'repair-kit'));

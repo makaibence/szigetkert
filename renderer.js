@@ -1,4 +1,4 @@
-import { TRAILS } from './island-layout.js';
+import { TRAILS, EARLY_TRAILS } from './island-layout.js';
 import { SIZE, key, terrain, terrainAt, resourcesAt, noise } from './world.js';
 import { placement } from './engine.js';
 import { loadArt, buildingFrame } from './art.js';
@@ -139,8 +139,10 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     let lines =
-      s.worldVersion === 2
-        ? TRAILS
+      s.worldVersion >= 2
+        ? s.worldVersion >= 3
+          ? [...TRAILS, ...EARLY_TRAILS]
+          : TRAILS
         : s.buildings.slice(1).map((b, i) => {
             const parent = s.buildings
               .slice(0, i + 1)
@@ -421,13 +423,56 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
                 : 1;
           ctx.drawImage(avatar.canvas, p.x - size / 2, p.y - size * 0.775, size, size);
           ctx.restore();
+          interactive.push({
+            left: p.x - size * 0.17,
+            top: p.y - size * 0.62,
+            w: size * 0.34,
+            h: size * 0.62,
+            tile: { workerId: worker.id },
+          });
         },
       });
+    }
+    const discovery = s.adventure?.pending;
+    if (
+      discovery?.target &&
+      discovery.type !== 'visitor' &&
+      known.has(key(discovery.target.x, discovery.target.y))
+    ) {
+      const p = pos(discovery.target.x, discovery.target.y);
+      if (visible(p))
+        objects.push({
+          depth: p.y,
+          draw: () =>
+            sprite(
+              discovery.type === 'traces' ? 'expedition' : 'props',
+              discovery.type === 'traces' ? 8 : discovery.type === 'request' ? 5 : 7,
+              p,
+              unit * (discovery.type === 'traces' ? 0.55 : 0.38),
+              { x: discovery.target.x, y: discovery.target.y, discovery: true },
+            ),
+        });
     }
     for (const site of s.adventure?.sites || []) {
       if (!known.has(key(site.x, site.y)) || (site.kind === 'building' && site.restored)) continue;
       const p = pos(site.x, site.y);
       if (!visible(p)) continue;
+      if (site.type === 'hut') {
+        objects.push({
+          depth: p.y,
+          draw: () =>
+            sprite('village', 0, p, unit * 1.42, { x: site.x, y: site.y, siteId: site.id }),
+        });
+        continue;
+      }
+      if (site.kind === 'forage') {
+        objects.push({
+          depth: p.y,
+          draw: () =>
+            sprite('nature', 14, p, unit * 0.47, { x: site.x, y: site.y, siteId: site.id }),
+        });
+        continue;
+      }
       const bridge = site.kind === 'bridge',
         index = bridge ? (site.restored ? 5 : 4) : (site.art ?? 8);
       objects.push({
@@ -468,6 +513,23 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
     }
     objects.sort((a, b) => a.depth - b.depth);
     for (const o of objects) o.draw();
+    for (const w of s.workers || []) {
+      if (
+        w.phase === 'inside' ||
+        !known.has(key(Math.round(w.x), Math.round(w.y))) ||
+        !((w.energy ?? 100) <= 25 || options.selectedWorker?.() === w.id)
+      )
+        continue;
+      const p = pos(w.x, w.y);
+      if (!visible(p)) continue;
+      const bw = Math.max(22, unit * 0.31),
+        bh = 5,
+        top = p.y - unit * 0.67;
+      ctx.fillStyle = '#182832dd';
+      ctx.fillRect(p.x - bw / 2 - 1, top - 1, bw + 2, bh + 2);
+      ctx.fillStyle = w.energy > 65 ? '#83bd51' : w.energy > 25 ? '#dfaa43' : '#cc6451';
+      ctx.fillRect(p.x - bw / 2, top, (bw * Math.max(0, w.energy)) / 100, bh);
+    }
     const destination = options.destination?.();
     if (destination) {
       const p = pos(destination.x, destination.y);
@@ -520,6 +582,7 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
       const u = (point.x - item.left) / item.w,
         v = (point.y - item.top) / item.h;
       if (u < 0 || v < 0 || u >= 1 || v >= 1) continue;
+      if (item.tile.workerId) return item.tile;
       const [sx, sy, sw, sh] = item.frame,
         image = art[item.atlas];
       const px = Math.floor(u * sw),

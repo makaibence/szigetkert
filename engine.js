@@ -1,6 +1,6 @@
 import { SIZE, key, terrain, terrainAt, resourcesAt, liveResources } from './world.js';
 export { SIZE, key, terrain, terrainAt, resourcesAt, liveResources };
-export const VERSION = 4,
+export const VERSION = 5,
   CAP = 8 * 3600;
 export const TYPES = {
   hut: {
@@ -29,7 +29,7 @@ export const TYPES = {
   },
   farm: {
     name: 'Gazdaság',
-    icon: '🌾',
+    icon: '🍲',
     cost: { wood: 20, stone: 10 },
     output: 'food',
     rate: 0.15,
@@ -47,7 +47,7 @@ export const TYPES = {
 export const RES = {
   wood: ['🪵', 'Fa'],
   stone: ['🪨', 'Kő'],
-  food: ['🌾', 'Élelem'],
+  food: ['🍲', 'Élelem'],
   gold: ['🪙', 'Arany'],
 };
 export function fresh(now = Date.now()) {
@@ -79,7 +79,7 @@ export const workerCount = (b) =>
 export const productionMultiplier = (b) =>
   workerCount(b) ? workerCount(b) * 1.3 ** ((b.level || 1) - 1) : 1.6 ** ((b.level || 1) - 1);
 export function upgradeCost(b) {
-  if (!b || (b.level || 1) >= 3) return null;
+  if (!b || b.type === 'hut' || (b.level || 1) >= 3) return null;
   const level = b.level || 1;
   return { wood: 25 * level, stone: 20 * level, food: 10 * level, gold: 5 * level };
 }
@@ -92,9 +92,7 @@ export function upgrade(s, id) {
   return true;
 }
 export function buildingRate(s, b) {
-  return (
-    (s.worldVersion === 2 && b.type === 'hut' ? 0.02 : TYPES[b.type].rate) * productionMultiplier(b)
-  );
+  return (b.type === 'hut' ? 0 : TYPES[b.type].rate) * productionMultiplier(b);
 }
 export function rates(s) {
   const r = { wood: 0, stone: 0, food: 0, gold: 0 };
@@ -256,7 +254,7 @@ export function validate(input) {
     b.y < SIZE;
   if (
     !s ||
-    ![1, 2, 3, 4].includes(s.version) ||
+    ![1, 2, 3, 4, 5].includes(s.version) ||
     !s.resources ||
     !Object.keys(RES).every((k) => n(s.resources[k])) ||
     !Array.isArray(s.buildings) ||
@@ -322,7 +320,7 @@ export function validate(input) {
     )
       throw Error('Hibás épületadat.');
   }
-  if (![1, 2].includes(s.worldVersion)) throw Error('Nem támogatott térképverzió.');
+  if (![1, 2, 3].includes(s.worldVersion)) throw Error('Nem támogatott térképverzió.');
   s.workers ||= [];
   if (!Array.isArray(s.workers) || s.workers.length > s.buildings.length * 3)
     throw Error('Hibás munkásadat.');
@@ -359,6 +357,20 @@ export function validate(input) {
       throw Error('Hibás munkásadat.');
     for (const k of ['workTime', 'workHits', 'rest', 'offlineRemainder', 'walkPhase'])
       if (w[k] != null && !n(w[k])) throw Error('Hibás munkásidő.');
+    if (w.energy != null && (!Number.isFinite(w.energy) || w.energy < 0 || w.energy > 100))
+      throw Error('Hibás munkásenergia.');
+    if (
+      w.recovery &&
+      (!['remaining', 'total', 'startEnergy', 'targetEnergy', 'foodPaid'].every(
+        (k) => Number.isFinite(w.recovery[k]) && w.recovery[k] >= 0,
+      ) ||
+        w.recovery.remaining > w.recovery.total ||
+        w.recovery.total > 60 ||
+        w.recovery.targetEnergy > 100 ||
+        w.recovery.startEnergy > 100 ||
+        w.recovery.foodPaid > 2)
+    )
+      throw Error('Hibás étkezési állapot.');
     if (w.doorMotion) {
       const m = w.doorMotion;
       if (

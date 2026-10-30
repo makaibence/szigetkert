@@ -109,14 +109,14 @@ export class TerrainSurface {
     woodland.width = 1;
     // A lightly worn clearing around the initial camp, with an irregular edge.
     const cx = (5 + OFFSET) * SCALE,
-      cy = ((this.worldVersion === 2 ? 10 : 5) + OFFSET) * SCALE;
+      cy = ((this.worldVersion >= 2 ? 10 : 5) + OFFSET) * SCALE;
     const clearing = g.createRadialGradient(cx, cy, 5, cx, cy, 105);
     clearing.addColorStop(0, '#d9c48dc9');
     clearing.addColorStop(0.55, '#cbb87a78');
     clearing.addColorStop(1, '#b9bd6b00');
     g.fillStyle = clearing;
     g.fillRect(cx - 105, cy - 105, 210, 210);
-    if (this.worldVersion === 2) {
+    if (this.worldVersion >= 2) {
       g.globalCompositeOperation = 'destination-out';
       const beach = g.createRadialGradient(4 * SCALE, 12 * SCALE, 15, 4 * SCALE, 12 * SCALE, 145);
       beach.addColorStop(0, '#000');
