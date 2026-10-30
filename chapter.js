@@ -62,6 +62,19 @@ export function ensureChapter(s) {
     }
     c.migrated = true;
   }
+  if (c.storyRevision == null) {
+    c.storyRevision = 2;
+    c.carpenterInvited = !!s.adventure.sites.find((p) => p.id === 'house')?.inspected;
+    c.carpenterIntro = c.completedOrders.includes('house-repair');
+    c.advancedUnlocked =
+      s.buildings.some((b) => ['kiln', 'forge'].includes(b.type)) ||
+      ['charcoal', 'ironOre', 'iron'].some((k) => s.resources[k] > 0) ||
+      s.production.jobs.some((j) => ['charcoal', 'iron'].includes(j.recipeId));
+    if (c.completedOrders.includes('house-repair')) {
+      const mill = s.buildings.find((b) => b.type === 'sawmill');
+      if (mill) mill.level = Math.max(2, mill.level || 1);
+    }
+  }
   ensureMerchant(s);
   return s;
 }
@@ -107,8 +120,7 @@ export function ensureMerchant(s) {
 }
 export function knownMaterial(s, k) {
   if (['wood', 'stone', 'food'].includes(k) || (s.resources[k] || 0) > 0) return true;
-  if (k === 'silver')
-    return s.adventure.sites.some((p) => ['house', 'tradepost'].includes(p.id) && p.inspected);
+  if (k === 'silver') return s.adventure.sites.some((p) => p.id === 'tradepost' && p.inspected);
   const type = {
     planks: 'sawmill',
     cutStone: 'mason',
@@ -133,7 +145,7 @@ export function activeOrder(s, siteId) {
       o.site === siteId &&
       !c.completedOrders.includes(id) &&
       (!o.requires || hasType(s, o.requires)) &&
-      (id !== 'house-repair' || hasType(s, 'sawmill'))
+      (id !== 'house-repair' || (hasType(s, 'sawmill') && s.chapter.carpenterIntro))
     ) {
       const p = s.adventure.sites.find((p) => p.id === siteId);
       if (!p?.inspected) return null;
@@ -164,10 +176,19 @@ export function deliverOrder(s, siteId, orderId) {
     p.buildingId = 'building:' + s.nextBuildingId++;
     s.buildings.push({ id: p.buildingId, type: p.type, x: p.x, y: p.y, level: 1 });
   }
+  if (o.id === 'house-repair') {
+    const mill = s.buildings.find((b) => b.type === 'sawmill');
+    if (mill) mill.level = Math.max(2, mill.level || 1);
+  }
   if (o.id.startsWith('repeat:')) s.chapter.repeatSerial++;
   else s.chapter.completedOrders.push(o.id);
   if (o.perk) s.chapter.perks[o.perk] = true;
-  s.chapter.history.unshift({ id: o.id, title: o.title, reward: o.reward });
+  s.chapter.history.unshift({
+    id: o.id,
+    title: o.title,
+    reward: o.reward,
+    ...(o.benefit ? { benefit: o.benefit } : {}),
+  });
   s.chapter.history = s.chapter.history.slice(0, 12);
   return true;
 }
@@ -194,23 +215,51 @@ export function chapterObjective(s) {
   if (!hasType(s, 'quarry')) return 'A fateleptől az északi ösvény a régi kőfejtőhöz vezet.';
   if (!site('bridge')?.restored) return 'Javítsd meg a leszakadt hidat a két telep anyagaiból.';
   if (!hasType(s, 'sawmill')) return 'A hídon túli főút egy régi fűrészműhelyhez vezet.';
-  if (!s.chapter.completedOrders.includes('house-repair'))
+  if (!s.chapter.completedOrders.includes('house-repair')) {
+    if (carpenterWaiting(s)) return 'Valaki vár a bázisnál. Térj vissza, és beszélj vele.';
+    if (!s.chapter.carpenterIntro)
+      return 'A fűrészműhelytől egy rövid ösvény egy régi házhoz vezet.';
     return s.resources.planks < 3
-      ? 'Készíts három deszkát a műhelyben, és keresd fel az ács házát.'
-      : 'Az ács házánál add át a deszkát és a követ a javításhoz.';
+      ? 'Az ács tetőjavításához készíts 3 deszkát; 8 kőre is szüksége lesz.'
+      : 'Vidd a deszkát és a követ az ács házához: cserébe megjavítja a műhelyt.';
+  }
   if (!hasType(s, 'mason'))
-    return 'Az ács újra munkába állt. Az északi műhelyben kőfaragás indulhat.';
+    return 'Az ács megmutatta a kőfaragóhoz vezető ösvényt. A faragott kő tartós javításokhoz kell.';
   if (!hasType(s, 'tradepost'))
     return 'Rendezd be a híd melletti kereskedőudvart a megrendelésekhez.';
   if (!s.chapter.completedOrders.includes('mason-sample'))
-    return 'Készíts falazócsomagot, és add át a kereskedőudvarban.';
+    return 'A kereskedő raktára beázik. Készíts 3 faragott követ és 2 deszkát a javításhoz.';
+  if (!s.chapter.advancedUnlocked)
+    return 'A raktár biztonságban van. A kereskedő új anyagokat vásárol; ezüstből a műhelybővítés munkadíját fizetheted.';
   if (!hasType(s, 'kiln')) return 'A műhelynegyed szénégetője tüzelőt adhat a következő munkához.';
   if (!hasType(s, 'forge')) return 'Deszkával és faragott kővel rendbe hozhatod a kovácsműhelyt.';
   if (!s.chapter.completedOrders.includes('forge-tools'))
     return 'A vasérces sziklából és faszénből készíts vasat az új szerszámokhoz.';
   return 'A műhelynegyed újra él. A kereskedőnél új anyagmegrendelés vár, a telepek tovább fejleszthetők.';
 }
+export function siteVisible(s, p) {
+  return (
+    !!p &&
+    (s.chapter?.advancedUnlocked ||
+      !(['kiln', 'forge'].includes(p.type) || p.kind === 'ore') ||
+      p.restored)
+  );
+}
+export function carpenterWaiting(s) {
+  return (
+    !!s.chapter?.carpenterInvited &&
+    !s.chapter?.carpenterIntro &&
+    !s.chapter.completedOrders.includes('house-repair')
+  );
+}
+export function introduceCarpenter(s) {
+  const base = s.adventure.sites.find((p) => p.type === 'hut');
+  if (!base || !carpenterWaiting(s) || !siteNear(s, base)) return false;
+  s.chapter.carpenterIntro = true;
+  return true;
+}
 export function siteRequirement(s, p) {
+  if (!siteVisible(s, p)) return false;
   if (!p.requires) return true;
   return s.adventure.sites.some(
     (q) => (q.id === p.requires || q.type === p.requires) && q.restored,
@@ -221,6 +270,10 @@ export function validateChapter(s) {
   const c = s.chapter;
   if (
     c.revision !== 1 ||
+    c.storyRevision !== 2 ||
+    !['carpenterInvited', 'carpenterIntro', 'advancedUnlocked'].every(
+      (k) => typeof c[k] === 'boolean',
+    ) ||
     typeof c.migrated !== 'boolean' ||
     !Array.isArray(c.completedOrders) ||
     new Set(c.completedOrders).size !== c.completedOrders.length ||

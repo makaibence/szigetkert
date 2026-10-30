@@ -1,5 +1,5 @@
 import { RES } from './engine.js';
-const ATLAS = {
+export const MATERIAL_ART = {
   wood: ['props', 0],
   stone: ['props', 1],
   gold: ['props', 3],
@@ -15,7 +15,7 @@ const ATLAS = {
 };
 export function iconSource(kind, renderer) {
   if (kind === 'food') return './assets/food-v09.png';
-  const a = ATLAS[kind];
+  const a = MATERIAL_ART[kind];
   return a ? renderer.thumbnail(...a) : null;
 }
 export function materialIcon(kind, renderer) {

@@ -267,15 +267,18 @@ export const STORY_ORDERS = {
   'house-repair': {
     site: 'house',
     title: 'Tető a mester feje fölé',
-    text: 'Az ács a házát szeretné rendbe hozni. Deszkát és követ kér a javításhoz.',
+    text: 'A vihar megbontotta az ács házának tetejét. Deszkát és követ kér; cserébe megjavítja a fűrészműhely sérült szerkezetét.',
     needs: { planks: 3, stone: 8 },
-    reward: { silver: 8 },
+    reward: {},
+    benefit:
+      'Az ács megjavítja a fűrészműhelyt: 2. szint, gyorsabb deszkakészítés és új épületváltozat.',
     restore: 'house',
   },
   'mason-sample': {
     site: 'tradepost',
-    title: 'Próba az új műhelyből',
-    text: 'A kereskedő egy tartós falazócsomagot kér a helyi javításokhoz.',
+    title: 'A kereskedő beázó raktára',
+    text: 'A kereskedő raktárának fala és teteje megsérült. Deszkát és faragott követ vásárol tőled, hogy megóvja az áruját az esőtől.',
+    benefit: 'A raktárt megjavítják, a kereskedő 10 ezüstöt fizet az anyagért.',
     needs: { cutStone: 3, planks: 2 },
     reward: { silver: 10 },
     requires: 'mason',
@@ -293,20 +296,21 @@ export const STORY_ORDERS = {
 export const REPEAT_ORDERS = [
   {
     title: 'Állványanyag a javításokhoz',
-    text: 'A kereskedő a környék helyreállításaihoz kér anyagot.',
+    text: 'A kereskedő új polcokat és kőtalpat készíttet a raktárába. Deszkát és követ vásárol tőled.',
     needs: { planks: 3, stone: 6 },
     reward: { silver: 6 },
     requires: 'sawmill',
   },
   {
     title: 'Falazócsomag',
-    text: 'Egy újabb javításhoz faragott kő és fa szükséges.',
+    text: 'A kereskedő megrendelőjének műhelyfalát javítják. Faragott követ és állványfát kér, az anyagot ezüsttel fizeti.',
     needs: { cutStone: 3, wood: 6 },
     reward: { silver: 8 },
     requires: 'mason',
   },
 ];
 export const SHOP = {
+  /* Legacy purchase kept only for validating old save perks. Hidden in the game. */
   workbench: {
     label: 'Tartós műhelyfelszerelés',
     text: 'A feldolgozás 20%-kal gyorsabb.',

@@ -81,10 +81,12 @@ export function terrainAt(s, x, y) {
   if (
     s.adventure?.sites?.some(
       (p) =>
-        ((p.kind === 'building' && !p.restored) ||
+        ((p.kind === 'building' &&
+          !p.restored &&
+          (s.chapter?.advancedUnlocked || !['kiln', 'forge'].includes(p.type))) ||
           p.kind === 'wreck' ||
           p.kind === 'marker' ||
-          (p.kind === 'ore' && p.oreLeft !== 0)) &&
+          (p.kind === 'ore' && s.chapter?.advancedUnlocked && p.oreLeft !== 0)) &&
         p.x === x &&
         p.y === y,
     )

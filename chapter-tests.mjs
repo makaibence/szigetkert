@@ -9,7 +9,13 @@ import {
   acknowledgeBaseWelcome,
 } from './adventure.js';
 import { fresh, afford, upgradeCost, tick, CAP } from './engine.js';
-import { activeOrder, deliverOrder, buyEquipment, ensureChapter } from './chapter.js';
+import {
+  activeOrder,
+  deliverOrder,
+  buyEquipment,
+  ensureChapter,
+  introduceCarpenter,
+} from './chapter.js';
 import { queueCraft, advanceCrafting, craftSpeed } from './production.js';
 import { siteReadiness } from './site-actions.js';
 import { findPath, revealAround } from './navigation.js';
@@ -45,7 +51,7 @@ assert.ok(queueCraft(s, mill.id, 3));
 assert.equal(s.resources.wood, wood - 9);
 assert.equal(queueCraft(s, mill.id, 0), false);
 assert.equal(queueCraft(s, mill.id, Infinity), false);
-assert.equal(queueCraft(s, mill.id, 10), false);
+assert.equal(queueCraft(s, mill.id, 1000), false);
 assert.equal(queueCraft(s, s.buildings.find((b) => b.type === 'hut').id, 1), false);
 advanceCrafting(s, 10);
 assert.ok(s.production.jobs[0].remaining > 0);
@@ -66,6 +72,9 @@ assert.equal(JSON.stringify(bankrupt.production), frozen);
 s.production = reloaded.production;
 s.resources = reloaded.resources;
 const house = visit('house');
+visit('camp');
+assert.ok(introduceCarpenter(s));
+visit('house');
 const order = activeOrder(s, 'house');
 assert.equal(order.id, 'house-repair');
 assert.equal(siteReadiness(s, house), 'Átadható');
@@ -75,7 +84,8 @@ s.hero.y = 10;
 assert.equal(deliverOrder(s, 'house', order.id), false);
 Object.assign(s.hero, oldHero);
 assert.ok(deliverOrder(s, 'house', order.id));
-assert.equal(s.resources.silver, 8);
+assert.equal(s.resources.silver, 0);
+assert.equal(mill.level, 2);
 assert.ok(house.restored);
 assert.equal(deliverOrder(s, 'house', order.id), false);
 assert.ok(queueCraft(s, mill.id, 3));
@@ -84,10 +94,10 @@ visit('mason');
 assert.ok(restoreSite(s, 'mason'));
 visit('tradepost');
 assert.ok(restoreSite(s, 'tradepost'));
-assert.ok(buyEquipment(s, 'workbench'));
+assert.equal(buyEquipment(s, 'workbench'), false);
 assert.equal(s.resources.silver, 0);
 assert.equal(buyEquipment(s, 'workbench'), false);
-assert.equal(craftSpeed(s, mill), 1.25);
+assert.equal(craftSpeed(s, mill), 1.3);
 const traderOrder = activeOrder(s, 'tradepost');
 Object.assign(s.resources, { cutStone: 3, planks: 2 });
 assert.ok(deliverOrder(s, 'tradepost', traderOrder.id));
@@ -153,5 +163,5 @@ const icons = materialAmounts({ wood: 18, stone: 10 }, mock, { available: s.reso
 assert.ok(icons.includes('src="props:0"') && icons.includes('src="props:1"'));
 assert.ok(!/🪵|🪨|🪙/.test(icons));
 console.log(
-  'PASS: bounded reserved crafting, resumable jobs, offline outputs once, insufficient-input rejection, local one-time orders, useful silver purchase, basic wood/stone upgrades, multi-island retention, pre-v6 raw backup, identical inventory/cost artwork.',
+  'PASS: resource-bounded reserved crafting, resumable jobs, offline outputs once, insufficient-input rejection, local one-time orders, carpenter repair instead of silver reward, basic wood/stone upgrades, multi-island retention, pre-v6 raw backup, identical inventory/cost artwork.',
 );

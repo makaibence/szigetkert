@@ -14,7 +14,7 @@ import {
   CAP,
 } from './engine.js';
 let s = fresh(Date.now() - 100000000);
-assert.equal(validate(JSON.parse(JSON.stringify(s))).version, 6);
+assert.equal(validate(JSON.parse(JSON.stringify(s))).version, 7);
 assert.equal(build(s, 'lumber', 4, 5), false);
 assert.equal(build(s, 'lumber', 5, 4), true);
 assert.equal(build(s, 'farm', 5, 4), false);

@@ -1,4 +1,4 @@
-import { afford, upgradeCost } from './engine.js';
+import { afford, upgradeCost, canUpgradeBuilding } from './engine.js';
 import { siteRequirement, activeOrder } from './chapter.js';
 import { key } from './world.js';
 export function siteReadiness(s, p) {
@@ -8,7 +8,7 @@ export function siteReadiness(s, p) {
   if (p.restored) {
     const b = s.buildings.find((b) => b.id === p.buildingId),
       cost = upgradeCost(b);
-    return cost && afford(s, cost) ? 'Fejleszthető' : null;
+    return cost && canUpgradeBuilding(s, b) && afford(s, cost) ? 'Fejleszthető' : null;
   }
   const repairCost = Object.fromEntries(
     Object.entries(p.cost || {}).map(([k, n]) => [

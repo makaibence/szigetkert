@@ -1343,3 +1343,99 @@ header {
 .material-name {
   font-size: 10px !important;
 }
+
+/* 0.11: one task entry, clear bottom edge, explicit material planning. */
+:root {
+  --hud-top: calc(env(safe-area-inset-top) + 32px);
+}
+header,
+#supply {
+  top: var(--hud-top);
+}
+#nextgoal {
+  top: calc(var(--hud-top) + 54px);
+  min-height: 44px;
+  padding: 9px 12px 9px 41px;
+  text-align: left;
+}
+#toast {
+  top: calc(var(--hud-top) + 114px);
+}
+footer {
+  display: none;
+}
+#detail,
+#sheet {
+  bottom: calc(env(safe-area-inset-bottom) + 12px);
+}
+#detail {
+  max-height: min(64svh, calc(100svh - var(--hud-top) - 122px));
+}
+#sheet {
+  max-height: 65svh;
+}
+#detail .site-head button {
+  min-width: 44px;
+  min-height: 44px;
+}
+.craft-planner {
+  background: #fcf4df;
+  border: 1px solid #d7c398;
+  border-radius: 13px;
+  padding: 12px;
+  margin: 8px 0 15px;
+  font-size: 12px;
+}
+.craft-planner label {
+  display: block;
+  font-weight: 700;
+  margin-top: 12px;
+}
+.recipe-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+}
+.craft-stock .material-amounts {
+  margin-left: 4px;
+}
+#craftamount {
+  display: block;
+  width: 100%;
+  height: 44px;
+  accent-color: #5e823c;
+  touch-action: pan-x;
+  cursor: pointer;
+}
+#startcraft {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  background: linear-gradient(#779f48, #4e712e);
+  color: #fff9e6;
+  font-weight: 650;
+  border: 1px solid #527634;
+  box-shadow: 0 2px 0 #3b5424;
+}
+#startcraft:disabled {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+.work-status {
+  padding: 10px;
+  background: #e7ecd3;
+  border-radius: 10px;
+  margin-top: 14px;
+}
+.work-status progress {
+  display: block;
+  width: 100%;
+  height: 12px;
+  accent-color: #6b953e;
+  margin: 7px 0;
+}
+#detail .craft-planner .hint {
+  font-size: 11px;
+}

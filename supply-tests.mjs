@@ -131,7 +131,7 @@ const raw4 = JSON.stringify(legacy),
   };
 const imported = loadGame(storage);
 assert.equal(imported.writable, true);
-assert.equal(imported.state.version, 6);
+assert.equal(imported.state.version, 7);
 assert.equal(storage.getItem('szigetkert.backup.pre-supply-v5'), raw4);
 assert.equal(storage.getItem(STORE), raw4);
 assert.deepEqual(imported.state.resources, legacy.resources);
@@ -139,7 +139,7 @@ const away = switchCampaign(imported.state),
   back = switchCampaign(away);
 assert.deepEqual(back.resources, legacy.resources);
 assert.deepEqual(back.buildings, legacy.buildings);
-assert.equal(validateCampaign(JSON.parse(JSON.stringify(back))).version, 6);
+assert.equal(validateCampaign(JSON.parse(JSON.stringify(back))).version, 7);
 console.log(
   'PASS: v4 raw backup created before writes; supplies and archived old city survive reversible island switching.',
 );

@@ -19,7 +19,7 @@
       <button id="settings" aria-label="Mentés és beállítások">☰</button>
     </header>
     <button id="supply" aria-label="Munka és ellátás"></button>
-    <button id="nextgoal" aria-label="Ajánlott következő cél"></button>
+    <button id="nextgoal" aria-label="Feladatok megnyitása" aria-expanded="false"></button>
     <main>
       <div id="world">
         <canvas
@@ -40,17 +40,8 @@
         </div>
         <section id="panel"></section>
       </div>
-      <nav>
-        <button data-tab="sites" aria-expanded="false">
-          <span class="gameicon icon-sites"></span
-          ><span>Sziget <span id="readycount" hidden></span></span></button
-        ><button data-tab="quests" aria-expanded="false">
-          <span class="gameicon icon-quests"></span
-          ><span>Feladatok <span id="questdot"></span></span>
-        </button>
-      </nav>
     </main>
-    <footer><span id="savestatus">Automatikus mentés</span><span>V0.10</span></footer>
+    <footer><span id="savestatus">Automatikus mentés</span><span>V0.11</span></footer>
     <div id="toast" role="status"></div>
     <dialog id="modal">
       <button id="close" class="close" aria-label="Bezárás">✕</button>

@@ -10,7 +10,7 @@ import { tick, afford } from './engine.js';
 import { findPath, smoothPath, advanceHero, revealAround } from './navigation.js';
 import { updateWorkers } from './workers.js';
 import { queueCraft } from './production.js';
-import { activeOrder, deliverOrder, buyEquipment } from './chapter.js';
+import { activeOrder, deliverOrder, buyEquipment, introduceCarpenter } from './chapter.js';
 const s = freshAdventure(Date.now() - 7200000, 987654);
 s.adventure.introSeen = true;
 s.adventure.tutorialSeen = true;
@@ -91,6 +91,9 @@ await restore('bridge');
 await restore('farm');
 await craft('farm', 6);
 go('house');
+go('camp');
+assert.ok(introduceCarpenter(s));
+go('house');
 waitCost(activeOrder(s, 'house').needs);
 assert.ok(deliverOrder(s, 'house', 'house-repair'));
 await checkpoint('first order');
@@ -101,17 +104,6 @@ await craft('mason', 6);
 go('tradepost');
 assert.ok(deliverOrder(s, 'tradepost', 'mason-sample'));
 await checkpoint('second order');
-assert.ok(buyEquipment(s, 'workbench'));
-await restore('kiln');
-await craft('mason', 3);
-await restore('forge');
-go('ore');
-go('ore');
-await craft('kiln', 3);
-await craft('forge', 2);
-go('tradepost');
-assert.ok(deliverOrder(s, 'tradepost', 'forge-tools'));
-await checkpoint('tools');
 assert.ok(
   log.find((p) => p.label === 'first order').seconds < 480,
   'First material order within eight simulated minutes',
@@ -120,7 +112,7 @@ assert.ok(
   log.find((p) => p.label === 'second order').seconds < 900,
   'Second meaningful order in first fifteen simulated minutes',
 );
-assert.ok(time < 1200, 'All connected workshop content remains reachable without grinding');
+assert.ok(time < 1200, 'Opening chapter remains reachable without grinding');
 console.log(
-  'PASS: complete compact-chapter route, finite revealed supply, bridge and specialist gates, processing chains, two meaningful orders within fifteen simulated minutes, tools unlock; no injected material income.',
+  'PASS: complete compact-chapter route, finite revealed supply, bridge and specialist gates, processing chains, carpenter exchange and merchant order within fifteen simulated minutes; no injected material income.',
 );

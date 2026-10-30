@@ -1,4 +1,4 @@
-const CACHE = 'szigetkert-shell-v10-workshops-4';
+const CACHE = 'szigetkert-shell-v11-clear-work-3';
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'ACTIVATE_UPDATE') self.skipWaiting();
 });

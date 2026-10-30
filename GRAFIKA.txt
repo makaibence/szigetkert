@@ -1,4 +1,4 @@
-SZIGETKERT 0.10 – MEGJELENÍTÉS ÉS FORRÁSOK
+SZIGETKERT 0.11 – MEGJELENÍTÉS ÉS FORRÁSOK
 
 A meglévő Canvas2D világ és helyi Three.js/WebGL karaktermegjelenítés maradt.
 A világ festett 2D-elemekből készül fix izometrikus kamerával, a szereplők
@@ -64,3 +64,11 @@ A tárgyaknál kis méretben is olvasható sziluett és azonos fényirány.
 A forrásképek változatlanok, frames.json külön határolja és maszkolja az elemeket.
 A működési animáció külön kódréteg; a mozgó elemek nem mentési adatok.
 A kalapács a csontozott kézhez kapcsolódik, csak a műhelyes munka alatt látható.
+
+
+0.11 MEGJELENÍTÉSI EGYSZERŰSÍTÉS
+Új képanyag nem készült. A meglévő festett műhelyek változatlanok.
+A 0.10 külön rárajzolt mozgó mechanikái és kinti kalapáló műhelyemberei
+kikerültek a jelenlegi megjelenítésből. A munkát számláló és folyamatsáv jelzi,
+a készletben is használt anyagikonokkal. A szintváltozatok továbbra is megmaradnak.
+A régi grafikai leírásban szereplő mechanikai mozgás a 0.10 történeti állapotára utal.

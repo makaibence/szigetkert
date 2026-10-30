@@ -35,13 +35,13 @@ const original = JSON.stringify(old),
   storage = new MemoryStorage();
 storage.setItem(STORE, original);
 const loaded = loadGame(storage);
-assert.equal(loaded.state.version, 6);
+assert.equal(loaded.state.version, 7);
 assert.equal(storage.getItem(BACKUP), original);
 assert.equal(storage.getItem(STORE), original);
 assert.deepEqual(loaded.state.resources, old.resources);
 assert.equal(loaded.state.buildings[0].id, 'building:1');
 saveGame(loaded.state, storage);
-assert.equal(JSON.parse(storage.getItem(STORE)).version, 6);
+assert.equal(JSON.parse(storage.getItem(STORE)).version, 7);
 assert.equal(storage.getItem(BACKUP), original);
 const s = fresh();
 let target;

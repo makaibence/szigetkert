@@ -2,7 +2,7 @@ import { EXTRA_RES, CRAFT_TYPES } from './content.js';
 import { advanceCrafting, validateProduction } from './production.js';
 import { SIZE, key, terrain, terrainAt, resourcesAt, liveResources } from './world.js';
 export { SIZE, key, terrain, terrainAt, resourcesAt, liveResources };
-export const VERSION = 6,
+export const VERSION = 7,
   CAP = 8 * 3600;
 export const TYPES = {
   ...CRAFT_TYPES,
@@ -92,13 +92,29 @@ export function upgradeCost(b) {
   if (!b || ['hut', 'residence', 'tradepost'].includes(b.type) || (b.level || 1) >= 3) return null;
   const level = b.level || 1;
   return CRAFT_TYPES[b.type] && !['residence', 'tradepost'].includes(b.type)
-    ? { wood: 16 * level, stone: 10 * level, planks: 2 * level }
+    ? {
+        wood: 16 * level,
+        stone: 10 * level,
+        planks: 2 * level,
+        ...(level === 2 ? { silver: 6 } : {}),
+      }
     : { wood: 18 * level, stone: 10 * level };
+}
+export function canUpgradeBuilding(s, b) {
+  return (
+    !!b &&
+    !(
+      s.chapter?.storyRevision === 2 &&
+      b.type === 'sawmill' &&
+      b.level === 1 &&
+      !s.chapter.completedOrders.includes('house-repair')
+    )
+  );
 }
 export function upgrade(s, id) {
   const b = s.buildings.find((b) => b.id === id),
     cost = upgradeCost(b);
-  if (!cost || !afford(s, cost)) return false;
+  if (!cost || !canUpgradeBuilding(s, b) || !afford(s, cost)) return false;
   pay(s, cost);
   b.level = (b.level || 1) + 1;
   return true;
@@ -270,7 +286,7 @@ export function claim(s, id) {
 export function validate(input) {
   const s = input,
     n = (n) => Number.isFinite(n) && n >= 0 && n <= 1e15;
-  if (s && [1, 2, 3, 4, 5].includes(s.version) && s.resources)
+  if (s && [1, 2, 3, 4, 5, 6].includes(s.version) && s.resources)
     for (const k of Object.keys(EXTRA_RES)) s.resources[k] ??= 0;
   const coord = (b) =>
     b &&
@@ -282,7 +298,7 @@ export function validate(input) {
     b.y < SIZE;
   if (
     !s ||
-    ![1, 2, 3, 4, 5, 6].includes(s.version) ||
+    ![1, 2, 3, 4, 5, 6, 7].includes(s.version) ||
     !s.resources ||
     !Object.keys(RES).every((k) => n(s.resources[k])) ||
     !Array.isArray(s.buildings) ||

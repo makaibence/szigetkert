@@ -1,4 +1,8 @@
 import { CHAPTER_TRAILS, RECIPES } from './content.js';
+import { productionProgress } from './production.js';
+import { RES } from './engine.js';
+import { MATERIAL_ART } from './ui-icons.js';
+import { siteVisible, carpenterWaiting } from './chapter.js';
 import { siteReadiness } from './site-actions.js';
 import { TRAILS, EARLY_TRAILS } from './island-layout.js';
 import { SIZE, key, terrain, terrainAt, resourcesAt, liveResources, noise } from './world.js';
@@ -105,98 +109,6 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
     ctx.drawImage(art.frameImages[atlas][index], left, top, w, h);
     ctx.restore();
     if (hit && alpha > 0.9) interactive.push({ left, top, w, h, frame, atlas, index, tile: hit });
-  }
-  function drawBuildingMotion(s, b, p, now) {
-    const ordinary = s.workers.some(
-      (w) => w.buildingId === b.id && ['working', 'returning', 'outbound'].includes(w.phase),
-    );
-    const craft =
-      s.production?.jobs.some((j) => j.buildingId === b.id) &&
-      s.production.crews[b.id]?.phase === 'working';
-    if (!ordinary && !craft) return;
-    const t = now / 1000,
-      u = unit;
-    ctx.save();
-    ctx.translate(p.x, p.y);
-    if (b.type === 'quarry') {
-      const lift = Math.sin(t * 1.7) * u * 0.08;
-      ctx.strokeStyle = '#6b4b2c';
-      ctx.lineWidth = Math.max(2, u * 0.024);
-      ctx.beginPath();
-      ctx.moveTo(u * 0.35, -u * 0.65);
-      ctx.lineTo(u * 0.35, -u * 0.24 + lift);
-      ctx.stroke();
-      ctx.fillStyle = '#9d7c4f';
-      ctx.strokeStyle = '#56422b';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.roundRect(u * 0.26, -u * 0.25 + lift, u * 0.19, u * 0.12, 2);
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = '#9eaca9';
-      ctx.fillRect(u * 0.29, -u * 0.27 + lift, u * 0.1, u * 0.045);
-    } else if (b.type === 'sawmill') {
-      const feed = (t * 0.18) % 1;
-      ctx.fillStyle = '#6e4a28';
-      ctx.beginPath();
-      ctx.ellipse(-u * 0.2, -u * 0.07, u * 0.28, u * 0.075, -0.12, 0, 7);
-      ctx.fill();
-      ctx.fillStyle = '#c19050';
-      ctx.beginPath();
-      ctx.roundRect(-u * 0.46 + feed * u * 0.09, -u * 0.14, u * 0.43, u * 0.09, 3);
-      ctx.fill();
-      ctx.strokeStyle = '#d1dbda';
-      ctx.lineWidth = Math.max(2, u * 0.025);
-      const stroke = Math.sin(t * 12) * u * 0.035;
-      ctx.beginPath();
-      ctx.moveTo(-u * 0.27 + stroke, -u * 0.25);
-      ctx.lineTo(-u * 0.12 + stroke, -u * 0.06);
-      ctx.stroke();
-      ctx.fillStyle = '#e6ba70';
-      for (let i = 0; i < 4; i++) {
-        const age = (t * 2 + i * 0.23) % 1;
-        ctx.globalAlpha = 1 - age;
-        ctx.fillRect(
-          -u * 0.18 + age * u * 0.12,
-          -u * 0.08 - age * u * 0.1 + age * age * u * 0.1,
-          u * 0.018,
-          u * 0.01,
-        );
-      }
-    } else if (['mason', 'forge'].includes(b.type)) {
-      ctx.fillStyle = b.type === 'forge' ? '#ffc662' : '#c8d3cc';
-      for (let i = 0; i < 5; i++) {
-        const f = (t * 1.8 + i * 0.2) % 1;
-        ctx.globalAlpha = (1 - f) * 0.8;
-        ctx.beginPath();
-        ctx.arc(
-          u * 0.05 + Math.cos(i * 2) * f * u * 0.1,
-          -u * 0.12 - f * u * 0.12,
-          Math.max(1, u * 0.012),
-          0,
-          7,
-        );
-        ctx.fill();
-      }
-    }
-    if (['kiln', 'forge'].includes(b.type))
-      for (let i = 0; i < 4; i++) {
-        const f = (t * 0.3 + i * 0.25) % 1;
-        ctx.globalAlpha = (1 - f) * 0.18;
-        ctx.fillStyle = '#d6d5bb';
-        ctx.beginPath();
-        ctx.ellipse(
-          u * 0.1 + f * u * 0.12,
-          -u * 0.65 - f * u * 0.45,
-          u * (0.03 + f * 0.08),
-          u * (0.04 + f * 0.1),
-          0,
-          0,
-          7,
-        );
-        ctx.fill();
-      }
-    ctx.restore();
   }
   function updateFog(s, now) {
     const signature = s.revealed.join(';');
@@ -388,7 +300,6 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
                 y,
                 buildingId: building.id,
               });
-              drawBuildingMotion(s, building, base, now);
             },
           });
           continue;
@@ -494,26 +405,6 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
         },
       });
     }
-    for (const crew of Object.values(s.production?.crews || {})) {
-      if (
-        crew.phase !== 'working' ||
-        !s.production.jobs.some((j) => j.buildingId === crew.buildingId)
-      )
-        continue;
-      const b = s.buildings.find((b) => b.id === crew.buildingId);
-      if (!b || !known.has(key(b.x, b.y))) continue;
-      const p = pos(b.x + 0.62, b.y + 0.4);
-      if (!visible(p)) continue;
-      objects.push({
-        depth: p.y + 0.01,
-        draw: () => {
-          const size = unit * 0.82;
-          avatar.setResolution(size * dpr);
-          avatar.draw({ angle: 0.7, action: 'craft', workTime: now / 1000 }, now / 1000, crew.id);
-          ctx.drawImage(avatar.canvas, p.x - size / 2, p.y - size * 0.775, size, size);
-        },
-      });
-    }
     for (const worker of s.workers || []) {
       const p = pos(worker.x, worker.y);
       if (
@@ -577,7 +468,12 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
         });
     }
     for (const site of s.adventure?.sites || []) {
-      if (!known.has(key(site.x, site.y)) || (site.kind === 'building' && site.restored)) continue;
+      if (
+        !siteVisible(s, site) ||
+        !known.has(key(site.x, site.y)) ||
+        (site.kind === 'building' && site.restored)
+      )
+        continue;
       const p = pos(site.x, site.y);
       if (!visible(p)) continue;
       if (site.type === 'hut') {
@@ -659,8 +555,19 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
           },
         });
     }
-    const residence = s.adventure?.sites.find((p) => p.id === 'house');
-    if (residence && known.has(key(residence.x, residence.y))) {
+    const residence = s.adventure?.sites.find(
+      (p) =>
+        p.id ===
+        (carpenterWaiting(s) ||
+        (s.chapter?.carpenterIntro && !s.chapter.completedOrders.includes('house-repair'))
+          ? 'camp'
+          : 'house'),
+    );
+    if (
+      residence &&
+      (residence.id !== 'house' || s.chapter?.completedOrders.includes('house-repair')) &&
+      known.has(key(residence.x, residence.y))
+    ) {
       const p = pos(residence.x + 0.75, residence.y + 0.3);
       if (visible(p))
         objects.push({
@@ -699,9 +606,86 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
       ctx.fillStyle = w.energy > 65 ? '#83bd51' : w.energy > 25 ? '#dfaa43' : '#cc6451';
       ctx.fillRect(p.x - bw / 2, top, (bw * Math.max(0, w.energy)) / 100, bh);
     }
+    for (const b of s.buildings) {
+      if (!known.has(key(b.x, b.y))) continue;
+      const progress = productionProgress(s, b),
+        chosen = getSelected(),
+        selected = chosen?.x === b.x && chosen?.y === b.y;
+      if (!progress && !selected) continue;
+      const p = pos(b.x, b.y),
+        ba = buildingArt(b.type, b.level || 1),
+        f = art.manifest[ba.atlas].frames[ba.index];
+      if (!visible(p)) continue;
+      const y = p.y - (unit * 1.42 * f[3]) / f[2] - 18;
+      if (progress) {
+        const w = 180,
+          h = 67,
+          left = Math.max(4, Math.min(width - w - 4, p.x - w / 2)),
+          top = y - h;
+        ctx.fillStyle = '#203c3ff2';
+        ctx.strokeStyle = '#c6b981';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(left, top, w, h, 10);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#fff1ce';
+        ctx.font = '600 12px system-ui';
+        ctx.textAlign = 'left';
+        const name = RES[progress.outputKind][1];
+        ctx.fillText(
+          `${name}: ${progress.completed} / ${progress.total} kész`,
+          left + 10,
+          top + 17,
+          w - 28,
+        );
+        const recipe = progress.recipe,
+          input = Object.keys(recipe.input)[0],
+          output = progress.outputKind;
+        const drawIcon = (kind, x) => {
+          const a = MATERIAL_ART[kind];
+          if (a) ctx.drawImage(art.frameImages[a[0]][a[1]], x, top + 24, 20, 20);
+        };
+        drawIcon(input, left + 9);
+        ctx.font = '11px system-ui';
+        ctx.fillText(String(progress.inputLeft[input]), left + 32, top + 38, 40);
+        ctx.fillText('→', left + 77, top + 38);
+        drawIcon(output, left + 96);
+        ctx.fillText(String(progress.outputLeft[output]) + ' hátra', left + 120, top + 38, w - 125);
+        ctx.fillStyle = '#11282d';
+        ctx.beginPath();
+        ctx.roundRect(left + 10, top + 51, w - 20, 7, 4);
+        ctx.fill();
+        ctx.fillStyle = '#9cb85b';
+        ctx.beginPath();
+        ctx.roundRect(left + 10, top + 51, Math.max(2, (w - 20) * progress.fraction), 7, 4);
+        ctx.fill();
+        ctx.textAlign = 'left';
+        interactive.push({ left, top, w, h, tile: { x: b.x, y: b.y, buildingId: b.id } });
+      } else if (selected) {
+        ctx.fillStyle = '#203c3ff2';
+        ctx.beginPath();
+        ctx.roundRect(p.x - 35, y - 29, 70, 23, 7);
+        ctx.fill();
+        ctx.fillStyle = '#f5e7c7';
+        ctx.font = '600 11px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText(`${b.level || 1}. szint`, p.x, y - 13);
+        ctx.textAlign = 'left';
+      }
+    }
     for (const site of s.adventure?.sites || []) {
       const ready = siteReadiness(s, site);
-      if (!ready) continue;
+      if (
+        !ready ||
+        !siteVisible(s, site) ||
+        (site.buildingId &&
+          productionProgress(
+            s,
+            s.buildings.find((b) => b.id === site.buildingId),
+          ))
+      )
+        continue;
       const p = pos(site.x, site.y);
       if (!visible(p)) continue;
       const b = site.buildingId && s.buildings.find((b) => b.id === site.buildingId),

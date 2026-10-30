@@ -5,6 +5,7 @@ import {
   siteRequirement,
   validateChapter,
   ensureMerchant,
+  siteVisible,
 } from './chapter.js';
 import { fresh, TYPES, afford, validate as validateCore } from './engine.js';
 import { LOCATIONS, EARLY_SITES } from './island-layout.js';
@@ -175,7 +176,7 @@ export function switchCampaign(s, index = 0) {
   return next;
 }
 export function knownSite(s, p) {
-  return s.revealed.includes(key(p.x, p.y));
+  return siteVisible(s, p) && s.revealed.includes(key(p.x, p.y));
 }
 export const siteById = (s, id) => s.adventure.sites.find((p) => p.id === id);
 export const restoredType = (s, type) =>
@@ -204,6 +205,17 @@ export function inspectSite(s, id) {
   if (!p || !knownSite(s, p) || Math.hypot(s.hero.x - p.x, s.hero.y - p.y) > 1.8)
     return { ok: false, text: 'Menj közelebb a helyszínhez.' };
   p.inspected = true;
+  if (
+    p.id === 'house' &&
+    !s.chapter.completedOrders.includes('house-repair') &&
+    !s.chapter.carpenterInvited
+  ) {
+    s.chapter.carpenterInvited = true;
+    return {
+      ok: true,
+      text: 'A ház tetejét megtépázta a vihar. Hazafelé egy ács szólít meg: a bázisnál szeretne beszélni veled.',
+    };
+  }
   if (p.type === 'hut' && !p.cacheClaimed) {
     p.cacheClaimed = true;
     p.baseWelcomePending = true;
@@ -269,7 +281,7 @@ export function inspectSite(s, id) {
     text: p.restored
       ? 'Ez a hely már újra él.'
       : p.kind === 'bridge'
-        ? 'A gerendák cserére szorulnak. Az átjáró javítható.'
+        ? 'A leszakadt gerendák elzárják az utat. A túlparton egy ösvény tűnik a ködbe. Vajon mit rejt odaát a sziget? Az átjáró megjavítható.'
         : 'A falak állnak. Munkával újra használhatóvá teheted ezt a helyet.',
   };
 }
