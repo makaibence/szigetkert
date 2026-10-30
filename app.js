@@ -1,3 +1,10 @@
+import {
+  noticeEligible,
+  needsNotice,
+  nearbyNotices,
+  acknowledgeSiteNotice,
+  siteNotice,
+} from './site-notices.js';
 import { patchMarkup } from './dom-patch.js';
 import { RECIPES } from './content.js';
 import {
@@ -191,7 +198,7 @@ function renderPanel() {
       )
       .join(
         '',
-      )}</div><p class="hint">A műhelyben éppen feldolgozott anyagot már átadtad. Az elkészült termék visszakerül ebbe a közös készletbe.</p>`;
+      )}</div><p class="hint">A hátizsák a szigeten összegyűjtött, szabadon felhasználható anyagaidat mutatja.${s.production?.jobs.length ? ' A műhelynek beadott alapanyag már nincs itt; a késztermék automatikusan ide kerül.' : ''}</p>`;
     return;
   }
   if (sheet === 'supply') {
@@ -238,7 +245,7 @@ let detailOwner = null;
 function detail() {
   if (craftDragging || document.activeElement?.id === 'craftamount') return;
   const p = selectedSite();
-  if (!p) {
+  if (!p || $('storymodal').open || needsNotice(s, p)) {
     $('detail').hidden = true;
     detailOwner = null;
     return;
@@ -278,7 +285,7 @@ function detail() {
     note = o
       ? o.text
       : carpenterWaiting(s)
-        ? 'Az ács a bázisnál vár rád. Előbb beszélj vele.'
+        ? 'Az ajtón hagyott üzenet szerint az ács a bázisodnál keres. Előbb beszélj vele.'
         : 'Előbb a kapcsolódó műhelyt kell helyreállítanod.';
     if (o) {
       rows =
@@ -322,7 +329,7 @@ function detail() {
       rows = `<div><span>Munkahelye</span><b>Fűrészműhely · ${s.buildings.find((v) => v.type === 'sawmill')?.level || 1}. szint</b></div><p class="hint">A jobb munkapadot és vezetősínt ő készítette. A következő műhelybővítés anyagigényét és munkadíját a fűrészműhelynél látod.</p>`;
     } else if (b.type === 'tradepost') {
       note =
-        'A kereskedő itt vásárolja meg a javításaihoz kért anyagokat. Előre látod az árat és a felhasználást.';
+        'Az udvarhoz tartozik a szekér és a mellette álló kereskedő. Itt adhatod el neki a javításaihoz kért anyagokat; az árat előre látod.';
       rows = '';
     } else {
       const workers = s.workers.filter((w) => w.buildingId === b.id),
@@ -378,7 +385,7 @@ function detail() {
   $('detail').hidden = false;
   const keepDetailScroll = detailOwner === selected;
   const previousScroll = $('detail').scrollTop;
-  const detailHTML = `<div class="site-head"><div><h3>${escape(p.name)}${b ? ' · ' + b.level + '. szint' : ''}</h3><p>${escape(note)}</p></div><button id="dismissdetail" aria-label="Panel bezárása">✕</button></div><div class="site-rows">${rows}</div>${action ? `<div class="site-actions"><button id="siteaction" data-action="${action}" ${disabled ? 'disabled' : ''}>${label}</button></div>` : ''}`;
+  const detailHTML = `<div class="site-head"><div><h3>${escape(p.name)}${b && !['hut', 'residence', 'tradepost'].includes(b.type) ? ' · ' + b.level + '. szint' : ''}</h3><p>${escape(note)}</p></div><button id="dismissdetail" aria-label="Panel bezárása">✕</button></div><div class="site-rows">${rows}</div>${action ? `<div class="site-actions"><button id="siteaction" data-action="${action}" ${disabled ? 'disabled' : ''}>${label}</button></div>` : ''}`;
   if (detailOwner !== selected) {
     $('detail').innerHTML = detailHTML;
     detailOwner = selected;
@@ -532,6 +539,11 @@ function refreshDetailValues() {
       );
     }
   }
+  const deliver = $('deliverorder');
+  if (deliver) {
+    const order = activeOrder(s, p.id);
+    deliver.disabled = !order || !afford(s, order.needs);
+  }
   const button = $('siteaction');
   if (button) {
     const action = button.dataset.action;
@@ -592,6 +604,10 @@ function render(force = false) {
 }
 function inspect(p) {
   if (!p) return;
+  if (needsNotice(s, p)) {
+    openSiteIntroduction(p);
+    return;
+  }
   if (p.kind === 'ore') {
     if (p.oreLeft === 0) {
       toast('Ez a lelőhely kimerült.');
@@ -607,10 +623,6 @@ function inspect(p) {
   if (r.ok) {
     save();
     render(true);
-    if (p.kind === 'bridge' && !p.restored) {
-      openBridge(p);
-      return;
-    }
     if (p.kind === 'wreck' && p.salvaged) {
       dialog(
         'A roncs maradványai',
@@ -641,7 +653,9 @@ function selectSite(id) {
   selectedWorker = null;
   selected = id;
   const p = selectedSite();
-  if (p && !p.inspected) approachSite(p);
+  if (p && needsNotice(s, p) && Math.hypot(s.hero.x - p.x, s.hero.y - p.y) <= 1.8)
+    openSiteIntroduction(p);
+  else if (p && !p.inspected) approachSite(p);
   else detail();
 }
 function approachSite(p) {
@@ -734,11 +748,14 @@ function update(dt) {
         if (path) route = path;
         else delete s.hero.job;
       } else {
+        const beforeGather = s.resources[node.kind];
         const result = advanceGathering(s, dt);
         s.hero.action = result.finished ? 'idle' : node.kind === 'wood' ? 'chop' : 'mine';
         s.hero.workTime = result.clock || 0;
         s.hero.targetAngle = Math.atan2(-(node.x - s.hero.x), node.y - s.hero.y);
         if (result.impacts) {
+          const amount = Number((s.resources[node.kind] - beforeGather).toFixed(3));
+          if (amount > 0) renderer.showGain({ kind: node.kind, amount, x: node.x, y: node.y });
           save();
           render();
         }
@@ -766,13 +783,16 @@ function update(dt) {
     lastCell = cell;
     const found = revealAround(s, s.hero, s.worldVersion >= 2 ? 2.5 : 2.8);
     const sites = discoverSites(s);
-    sites.forEach((p) => toast('Új helyszínt találtál: ' + p.name));
+    sites
+      .filter((p) => !noticeEligible(p))
+      .forEach((p) => toast('Új helyszínt találtál: ' + p.name));
     if (found) {
       if (!s.chapter) maybeEvent(s);
       save();
       render();
     }
   }
+  checkNearbyIntroductions();
   if (camera.follow) {
     const a = 1 - Math.exp(-dt * 7);
     camera.focus.x += (s.hero.x - camera.focus.x) * a;
@@ -895,6 +915,8 @@ attachGestures(canvas, camera, {
 });
 function dialog(title, text, buttons, extras = '') {
   drive = { x: 0, y: 0 };
+  $('detail').hidden = true;
+  closeSheet();
   $('storymodal').classList.remove('place-notice');
   $('storytitle').textContent = title;
   $('storytext').textContent = text;
@@ -914,25 +936,60 @@ function dialog(title, text, buttons, extras = '') {
   }
   if (!$('storymodal').open) $('storymodal').showModal();
 }
-function openBridge(p) {
-  dialog(
-    'A leszakadt fahíd',
-    'Itt még nem tudsz átmenni. A gerendák leszakadtak, de az alapok tartanak. Odaát egy régi ösvény tűnik a ködbe. Vajon mit rejthet a túlpart?',
-    [
-      {
-        label: 'Megnézem a javítást',
-        run: () => {
-          $('storymodal').close();
-          selected = p.id;
-          detail();
-        },
+const nearNotices = new Set();
+function checkNearbyIntroductions() {
+  if ($('storymodal').open || $('modal').open || sheet || !s.adventure.tutorialSeen) return;
+  const candidates = nearbyNotices(s),
+    current = new Set(candidates.map((p) => p.id));
+  const first = candidates
+    .filter((p) => !nearNotices.has(p.id))
+    .sort(
+      (a, b) =>
+        Math.hypot(s.hero.x - a.x, s.hero.y - a.y) - Math.hypot(s.hero.x - b.x, s.hero.y - b.y),
+    )[0];
+  nearNotices.clear();
+  current.forEach((id) => nearNotices.add(id));
+  if (first) openSiteIntroduction(first);
+}
+function openSiteIntroduction(p) {
+  if (!needsNotice(s, p) || Math.hypot(s.hero.x - p.x, s.hero.y - p.y) > 1.8) return false;
+  nearNotices.add(p.id);
+  route = [];
+  siteTarget = null;
+  encounterTarget = null;
+  drive = { x: 0, y: 0 };
+  selected = null;
+  detail();
+  if (p.type === 'hut') {
+    if (!p.inspected) {
+      inspectSite(s, p.id);
+      save();
+    }
+    return openBaseWelcome();
+  }
+  const notice = siteNotice(p);
+  dialog(notice.title, notice.text, [
+    {
+      label: notice.button,
+      run: () => {
+        if (!acknowledgeSiteNotice(s, p.id)) return;
+        save();
+        $('storymodal').close();
+        selected = p.id;
+        inspect(p);
       },
-    ],
-  );
+    },
+    {
+      label: 'Most nem',
+      run: () => {
+        $('storymodal').close();
+        selected = null;
+        detail();
+      },
+    },
+  ]);
   $('storymodal').classList.add('place-notice');
-  $('storyextras').innerHTML =
-    '<p>Az átjáró helyreállításához:</p>' +
-    materialAmounts(siteCost(s, p), renderer, { available: s.resources });
+  return true;
 }
 function openCarpenter() {
   if (!carpenterWaiting(s)) return false;
@@ -958,7 +1015,10 @@ function openCarpenter() {
 }
 function openBaseWelcome() {
   const found = pendingBaseWelcome(s);
-  if (!found) return false;
+  const place = found && siteById(s, found.siteId);
+  if (!found || Math.hypot(s.hero.x - place.x, s.hero.y - place.y) > 1.8) return false;
+  selected = null;
+  detail();
   dialog(
     'Egy hely, ahonnan elindulhatsz',
     'A ház régóta üresen áll, de a tető még tart. Odabent félretett faanyagot, követ és egy kis élelemtartalékot találsz. Rendbe hozva ez lehet a bázisod, ahonnan felfedezheted a szigetet.',
@@ -966,6 +1026,7 @@ function openBaseWelcome() {
       {
         label: 'Rendbe hozom a házat',
         run: () => {
+          acknowledgeSiteNotice(s, found.siteId);
           acknowledgeBaseWelcome(s, found.siteId);
           save();
           $('storymodal').close();
@@ -975,8 +1036,17 @@ function openBaseWelcome() {
           detail();
         },
       },
+      {
+        label: 'Most nem',
+        run: () => {
+          $('storymodal').close();
+          selected = null;
+          detail();
+        },
+      },
     ],
   );
+  $('storymodal').classList.add('place-notice');
   const caption = document.createElement('p');
   caption.className = 'base-reward-caption';
   caption.textContent = 'A közös készletbe került:';
@@ -1169,6 +1239,7 @@ function activate(next) {
   selectedWorker = null;
   encounterTarget = null;
   lastCell = '';
+  nearNotices.clear();
   camera.focus = { x: s.hero.x, y: s.hero.y };
   camera.x = camera.y = 0;
   camera.follow = true;
@@ -1181,7 +1252,7 @@ function activate(next) {
 $('settings').onclick = () => {
   drive = { x: 0, y: 0 };
   $('saveinfo').textContent =
-    `Játékverzió: 0.12 · Mentés: v${s.version}. ${s.archive ? 'A megőrzött szigeteid ugyanebben a mentésben vannak.' : 'Automatikus mentés ezen az eszközön.'}`;
+    `Játékverzió: 0.13 · Mentés: v${s.version}. ${s.archive ? 'A megőrzött szigeteid ugyanebben a mentésben vannak.' : 'Automatikus mentés ezen az eszközön.'}`;
   $('switchcampaign').textContent = s.archive
     ? 'Váltás a másik megőrzött szigetre'
     : 'Új kaland, a jelenlegi sziget megőrzésével';
@@ -1231,6 +1302,7 @@ function download(data, name) {
 }
 function migrationBackup() {
   return (
+    localStorage.getItem('szigetkert.backup.pre-v13') ||
     localStorage.getItem('szigetkert.backup.pre-v12-v8') ||
     localStorage.getItem('szigetkert.backup.pre-simplification-v7') ||
     localStorage.getItem('szigetkert.backup.pre-chapter-v6') ||
@@ -1338,3 +1410,8 @@ if (loaded.error)
   toast('A korábbi mentés nem olvasható. Nem írjuk felül; importálj biztonsági másolatot.');
 render(true);
 setupOffline({ save, toast });
+
+$('storymodal').addEventListener('cancel', () => {
+  selected = null;
+  detail();
+});

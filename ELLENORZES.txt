@@ -1,48 +1,43 @@
-SZIGETKERT 0.12 – ELLENŐRZÉSI JEGYZŐKÖNYV
-2026. október 30.
+SZIGETKERT 0.13 – ELLENŐRZÉSI JEGYZŐKÖNYV
+2026. október 31.
 
-A meglévő projekt folytatása, a 0.11 forrásmásolat és teljes ZIP megőrzésével.
-Nincs új projekt, fiók, külső adatbázis vagy új jogosultságigény.
+A meglévő 0.12 projekt folytatása. A 0.12 teljes ZIP és az átalakítás előtti
+forrásmásolat megmaradt. Új grafikai asset nem készült, az épületek nem költöztek el.
+A fejezethez tartozó kereskedő és szekér az udvar mellé került, az őket takaró
+közeli növényzetet a megjelenítés elrejti. A nyersanyagállapot nem törlődik.
 
-AUTOMATIZÁLT ELLENŐRZÉS
-20 sikeres tesztcsoport: node test.mjs.
-Útvonalkeresés, érintés/joystick logika, véges gyűjtés, munkásciklusok,
-mentésvalidálás, verzióátalakítás, egyszeri jutalmak, ellátás, offline termelés,
-anyagfoglalás, nagy gyártási sor és a teljes korai fejezet megőrzött tesztjei.
-Új regressziós tesztek: több mint ezer tényleges munkás-mozgási mintában
-haladási irány és testirány egyezik, kanyarok és ajtóból kilépés mellett is;
-négy további véges kőlelőhely; tiszta érkezési part; egy fő cél;
-összesített időbecslés; épülethez kötött jelzések; stabil panel frissítési útja.
+21 SIKERES AUTOMATIZÁLT TESZTCSOPORT
+node test.mjs. Megmaradtak a korábbi gyűjtési, munkás-, navigációs, gazdasági,
+mentési, ellátási, offline, fejezetsorrendi és gyártási regressziós tesztek.
+Az új tesztek ellenőrzik a közelségi bemutató elfogadásának feltételeit,
+a távolodás/visszatérés és az újratöltés adatmegőrzését, az egyszeri báziskészletet,
+a kereskedő és ácsház távolságát és a járható megközelítést; az 50%-kal gyorsabb,
+anyagra fedezett gyártást; a kijelzett gyűjtési hozam és a jóváírás egyezését;
+a fejezetvégi állapotot és a frissítés előtti nyers másolatot.
+A régi időzítési tesztek az új feldolgozási sebességhez igazodtak; az anyagegyenleg
+és az egyszeri jóváírás ellenőrzése nem változott.
+Külön v3/v7/v8 állásokon ellenőrizve a változatlan készletek, épülethelyek,
+azonosítók és szintek, nyersanyagállapot, gyártási adatok és export/import.
 
-Külön meglévő v7 és v3 mentésmintákon is ellenőrizve:
-készletértékek, épületazonosítók és helyek, elért szintek, nyersanyagfogyás,
-folyamatban lévő gyártási adatok, export/import kör visszaállítása.
-A migráció előtti nyers másolat létrejött. A személyes mentés nincs a ZIP-ben.
-
-BÖNGÉSZŐS ELLENŐRZÉS 393×852 MÉRETBEN
-A működő kőfaragóműhely paneljében a görgetés 281 képponton maradt,
-a fejlesztés gomb téglalapja változatlan maradt (y=773–817). Termelés közben
-is sikerült 2-ről 3. szintre fejleszteni. A csúszkán 6 kő → 2 faragott kő
-kiválasztásánál megjelent az új mennyiség és a folyó munkával együtti becsült idő.
-Az épület feletti, kis jelző kijelölés nélkül is látható.
-A feladatpanelben egy fő feladat és annak szükséges anyagai jelennek meg.
-A leszakadt híd megvizsgálásakor fehér, felül elhelyezett ablak jelent meg,
-a történeti szöveggel, javítási anyagokkal és egy továbblépő gombbal.
-A külön tesztállás importja a normál fájlválasztós felületen történt.
-A 8101-es tesztkiszolgáló leállítása után az oldal újratöltődött és a világ
-betöltődött az offline csomagból, a mentett hídállással és működő munkásokkal.
-A vizsgált játékműveletek nem adtak böngészős JavaScript-hibát.
-
-A mellékelt PNG-k tényleges, futó játékból készültek:
-v12-erkezes.png, v12-allando-jelzesek.png, v12-gyartasi-idobecsles.png,
-v12-stabil-fejlesztes.png, v12-egyetlen-feladat.png, v12-hid-ablak.png,
-v12-offline-folytatas.png.
+TÉNYLEGES BÖNGÉSZŐS ELLENŐRZÉS 393×852 MÉRETBEN
+Normál játékindítás után a karakterrel a bázis közelébe mentem. A bemutató
+kattintás nélkül megjelent, a részletpanel rejtve maradt. A Most nem után
+eltávolodtam és visszamentem; ugyanaz a bemutató újra megjelent, többletkészlet nélkül.
+Elfogadás után bezárult a bemutató, és csak a díjmentes rendbetétel panelje nyílt meg.
+A hídhoz közeli tesztállás betöltésekor ugyanilyen bemutató jelent meg.
+A storyextras üres volt, a detail rejtve. A Megnézem a javítást gomb után
+jelent meg a nyersanyagigény és a Helyreállítás gomb.
+A hátizsákban műhely nélküli induláskor nem szerepelt feldolgozási magyarázat.
+Mindkét működő műhely fölött látszott a mennyiség és a kb. hátralévő idő.
+A kereskedőudvarnál megjelent az Eladás · kész felirat és a zöld átadásgomb.
+Az anyagátadás után új ajánlat jelent meg. A kereskedő látható volt a szekér mellett.
+Gyors, ismételt bányászati koppintások képsorán megjelentek a felszálló +1 kő
+jelzések. A mellékelt hozamkép valódi játékból készült, nem utólag rajzolt elem.
+A végleges offline csomag elkészülte után leállítottam a külön tesztkiszolgálót;
+az oldal újratöltése a teljes világgal és a mentett állással sikerült.
 
 KORLÁTOK
-A teszt mobilméretű asztali böngészőben történt, nem valódi iPhone 15-ön.
-A feldolgozási idő becslés, a játék későbbi ellátási helyzetét nem jósolja meg.
-Az épületjelző képernyőn kívül eltűnik; nem követi külön a játékost.
-Új képanyag nem készült. Ez működési és felületi javítás, a teljes korábbi
-látványtervvel való vizuális egyezést nem állítom. A roncs nagyításkor a
-képernyő szélén részben kilóghat. A korábbi festett műhelyek megmaradtak.
-A JavaScript teszt nem helyettesíti a valódi érintőképernyős használhatóságtesztet.
+A vizsgálat asztali böngésző mobilméretű nézetében történt, nem fizikai iPhone-on.
+A feldolgozási idő becslés. A készülék teljesítménye és az érintés kényelme
+valódi készüléken ellenőrizendő. Új történeti fejezet nincs ebben a változatban.
+A következő fejezet terve javaslat, nem kész funkció.

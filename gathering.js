@@ -21,15 +21,19 @@ export function advanceGathering(s, dt) {
   j.clock += Math.max(0, Math.min(0.12, dt)) * j.boost;
   j.boost = Math.max(1, j.boost - Math.max(0, Math.min(0.12, dt)) * 0.2);
   let impacts = 0;
+  const rewards = [];
   while (j.left > 0 && j.clock >= j.nextImpact) {
     const r = harvestHit(s, { x: node.tileX, y: node.tileY, resourceId: node.id });
     j.nextImpact += 0.966667;
     j.left--;
-    if (r.ok) impacts++;
+    if (r.ok) {
+      impacts++;
+      rewards.push({ kind: r.kind, amount: r.amount, x: node.x, y: node.y });
+    }
     if (!r.ok || r.finished) j.left = 0;
   }
   const done = j.left === 0 && j.clock >= j.nextImpact - 0.966667 + 0.3,
     clock = j.clock;
   if (done) delete s.hero.job;
-  return { impacts, finished: done, clock, kind: node.kind, node };
+  return { impacts, rewards, finished: done, clock, kind: node.kind, node };
 }

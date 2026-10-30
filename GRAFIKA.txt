@@ -80,3 +80,11 @@ a megjelenítés, a logikai interakció a járható parton marad. A parti homoko
 tisztás szélesebb, a közeli növényzetet az érkezési körzetben nem rajzoljuk.
 A szint- és gyártási jelző a saját épület térbeli pontjához kötött, nincs
 képernyőszélhez rögzítés. A köd és a festett atlaszok változatlan alapra épülnek.
+
+
+0.13 – KÖZELSÉGI BEMUTATÓK ÉS ÁLLAPOTJELZÉSEK
+Új grafikai asset nem készült. A bemutató és a javítás külön felület.
+Az épületek feletti kompakt jelzőben hátralévő idő is szerepel;
+a gyűjtési +szám és anyagikon valódi jóváírásból készül, csak megjelenítés.
+A kereskedő és szekere közelebb került a kereskedőudvarhoz; a házak mentett
+helye nem változott. A régi, nem fejleszthető helyek fölött szerepük neve látszik.

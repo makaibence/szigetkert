@@ -41,7 +41,7 @@ assert.ok(queueCraft(s, b.id, 100));
 assert.equal(s.resources.wood, stock - 300);
 assert.equal(s.production.jobs.length, 1);
 assert.equal(productionProgress(s, b).total, 100);
-advanceCrafting(s, 45);
+advanceCrafting(s, 30);
 assert.equal(s.resources.planks, 2);
 assert.equal(productionProgress(s, b).left, 98);
 assert.equal(productionProgress(s, b).inputLeft.wood, 294);

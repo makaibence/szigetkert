@@ -1,4 +1,4 @@
-const CACHE = 'szigetkert-shell-v12-island-fixes-3';
+const CACHE = 'szigetkert-shell-v13-discoveries-3';
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'ACTIVATE_UPDATE') self.skipWaiting();
 });

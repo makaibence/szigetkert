@@ -97,7 +97,7 @@ assert.ok(restoreSite(s, 'tradepost'));
 assert.equal(buyEquipment(s, 'workbench'), false);
 assert.equal(s.resources.silver, 0);
 assert.equal(buyEquipment(s, 'workbench'), false);
-assert.equal(craftSpeed(s, mill), 1.3);
+assert.ok(Math.abs(craftSpeed(s, mill) / craftSpeed(s, { ...mill, level: 1 }) - 1.3) < 1e-9);
 const traderOrder = activeOrder(s, 'tradepost');
 Object.assign(s.resources, { cutStone: 3, planks: 2 });
 assert.ok(deliverOrder(s, 'tradepost', traderOrder.id));

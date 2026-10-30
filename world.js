@@ -96,7 +96,8 @@ export function liveResources(s, x, y) {
             Math.hypot(p.x - r.x, p.y - r.y) < (r.kind === 'wood' ? 1.6 : 1.25),
         ) ||
           (s.adventure?.trader?.active &&
-            Math.hypot(s.adventure.trader.x - r.x, s.adventure.trader.y - r.y) < 1.5))
+            Math.hypot(s.adventure.trader.x - r.x, s.adventure.trader.y - r.y) <
+              (s.adventure.trader.chapterMerchant ? 2.25 : 1.5)))
       ),
   );
 }

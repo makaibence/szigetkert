@@ -13,5 +13,6 @@ for (const test of [
   'chapter-flow-tests.mjs',
   'simplification-tests.mjs',
   'refinement-tests.mjs',
+  'discovery-tests.mjs',
 ])
   await import('./' + test);

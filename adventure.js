@@ -214,7 +214,7 @@ export function inspectSite(s, id) {
     s.chapter.carpenterInvited = true;
     return {
       ok: true,
-      text: 'A ház tetejét megtépázta a vihar. Hazafelé egy ács szólít meg: a bázisnál szeretne beszélni veled.',
+      text: 'Üzenet az ajtón: az ács a bázisodnál keres majd. Térj vissza, ha beszélnél vele.',
     };
   }
   if (p.type === 'hut' && !p.cacheClaimed) {
@@ -539,7 +539,8 @@ export function validateCampaign(s, depth = 0) {
       p.y >= SIZE ||
       !['wreck', 'building', 'bridge', 'marker', 'forage', 'ore'].includes(p.kind) ||
       typeof p.restored !== 'boolean' ||
-      typeof p.inspected !== 'boolean'
+      typeof p.inspected !== 'boolean' ||
+      (p.noticeAccepted != null && typeof p.noticeAccepted !== 'boolean')
     )
       throw Error('Hibás helyszínadat.');
     if (

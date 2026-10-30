@@ -277,7 +277,7 @@ export const STORY_ORDERS = {
   'mason-sample': {
     site: 'tradepost',
     title: 'A kereskedő beázó raktára',
-    text: 'A kereskedő raktárának fala és teteje megsérült. Deszkát és faragott követ vásárol tőled, hogy megóvja az áruját az esőtől.',
+    text: 'A kereskedő raktárának fala és teteje megsérült. Deszkát és faragott követ vásárolna tőled, hogy megóvja az áruját az esőtől.',
     benefit: 'A raktárt megjavítják, a kereskedő 10 ezüstöt fizet az anyagért.',
     needs: { cutStone: 3, planks: 2 },
     reward: { silver: 10 },
@@ -296,7 +296,7 @@ export const STORY_ORDERS = {
 export const REPEAT_ORDERS = [
   {
     title: 'Állványanyag a javításokhoz',
-    text: 'A kereskedő új polcokat és kőtalpat készíttet a raktárába. Deszkát és követ vásárol tőled.',
+    text: 'A kereskedő új polcokat és kőtalpat készíttet a raktárába. Deszkát és követ vásárolna tőled.',
     needs: { planks: 3, stone: 6 },
     reward: { silver: 6 },
     requires: 'sawmill',

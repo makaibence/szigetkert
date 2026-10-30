@@ -79,7 +79,8 @@ export function productionProgress(s, b) {
   };
 }
 export function craftSpeed(s, b) {
-  return (1 + 0.3 * ((b.level || 1) - 1)) * (s.chapter?.perks?.fastCraft ? 1.25 : 1);
+  const pace = ['sawmill', 'mason'].includes(b.type) ? 1.5 : 1;
+  return pace * (1 + 0.3 * ((b.level || 1) - 1)) * (s.chapter?.perks?.fastCraft ? 1.25 : 1);
 }
 export function advanceCrafting(s, seconds) {
   if (!s.production || seconds <= 0) return;

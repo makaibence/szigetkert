@@ -1,6 +1,6 @@
 import { CHAPTER_TRAILS, RECIPES } from './content.js';
 import { buildingLabel } from './world-ui.js';
-import { productionProgress } from './production.js';
+import { productionProgress, craftEstimate, durationText } from './production.js';
 import { RES } from './engine.js';
 import { MATERIAL_ART } from './ui-icons.js';
 import { siteVisible, carpenterWaiting } from './chapter.js';
@@ -26,6 +26,7 @@ const TEX = 2300,
 
 export function createRenderer(canvas, getState, getSelected, camera, options = {}) {
   const ctx = canvas.getContext('2d');
+  const gains = [];
   let art,
     surface,
     avatar,
@@ -370,7 +371,9 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
           for (let i = 0; i < count; i++) {
             if (
               noise(x + i * 7, y + 73) < 0.36 ||
-              s.buildings.some((b) => Math.hypot(b.x - x, b.y - y) < 1.05)
+              s.buildings.some((b) => Math.hypot(b.x - x, b.y - y) < 1.05) ||
+              (s.adventure?.trader?.active &&
+                Math.hypot(s.adventure.trader.x - x, s.adventure.trader.y - y) < 2.25)
             )
               continue;
             const p = pos(
@@ -550,13 +553,19 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
       if (known.has(key(t.x, t.y)) && visible(p)) {
         objects.push({
           depth: p.y,
-          draw: () => sprite('expedition', 7, p, unit * 0.9, { x: t.x, y: t.y, event: true }),
+          draw: () =>
+            sprite('expedition', 7, p, unit * (t.chapterMerchant ? 0.65 : 0.9), {
+              x: t.x,
+              y: t.y,
+              event: true,
+              ...(t.chapterMerchant ? { siteId: 'tradepost' } : {}),
+            }),
         });
       }
     }
     if (s.adventure?.trader?.active) {
       const t = s.adventure.trader,
-        p = pos(t.x + 0.48, t.y - 0.12);
+        p = pos(t.x + 0.45, t.y + 0.15);
       if (known.has(key(t.x, t.y)) && visible(p))
         objects.push({
           depth: p.y,
@@ -627,9 +636,9 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
         f = art.manifest[ba.atlas].frames[ba.index];
       if (p.x < 0 || p.x > width || p.y < 0 || p.y > height + unit * 1.5) continue;
       const box = buildingLabel(p, unit, f[3] / f[2], !!progress),
-        left = box.left,
+        w = !progress && ['hut', 'residence', 'tradepost'].includes(b.type) ? 94 : box.width,
+        left = p.x - w / 2,
         top = box.top,
-        w = box.width,
         h = box.height;
       const site = s.adventure?.sites.find((p) => p.buildingId === b.id),
         ready = site && siteReadiness(s, site);
@@ -663,16 +672,30 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
         ctx.fillText('→', left + w * 0.45, top + 29);
         drawIcon(output, left + w * 0.58);
         ctx.fillText(String(progress.outputLeft[output]), left + w * 0.58 + 17, top + 29, w * 0.25);
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#e7edcf';
+        ctx.fillText('Kb. ' + durationText(craftEstimate(s, b)), left + w / 2, top + 46, w - 12);
         ctx.fillStyle = '#132a2d';
         ctx.beginPath();
-        ctx.roundRect(left + 7, top + 38, w - 14, 5, 3);
+        ctx.roundRect(left + 7, top + 54, w - 14, 5, 3);
         ctx.fill();
         ctx.fillStyle = '#a5c766';
         ctx.beginPath();
-        ctx.roundRect(left + 7, top + 38, Math.max(1, (w - 14) * progress.fraction), 5, 3);
+        ctx.roundRect(left + 7, top + 54, Math.max(1, (w - 14) * progress.fraction), 5, 3);
         ctx.fill();
-      } else
-        ctx.fillText(`${b.level || 1}. szint${ready ? ' ↑' : ''}`, left + w / 2, top + 15, w - 8);
+      } else {
+        const caption =
+          b.type === 'hut'
+            ? 'Bázis'
+            : b.type === 'residence'
+              ? 'Ács otthona'
+              : b.type === 'tradepost'
+                ? ready === 'Átadható'
+                  ? 'Eladás · kész'
+                  : 'Kereskedő'
+                : `${b.level || 1}. szint${ready ? ' ↑' : ''}`;
+        ctx.fillText(caption, left + w / 2, top + 15, w - 8);
+      }
       ctx.textAlign = 'left';
       interactive.push({
         left,
@@ -760,6 +783,26 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
         ctx.globalAlpha = 1;
       }
     }
+    while (gains.length && now - gains[0].at > 1400) gains.shift();
+    for (const gain of gains) {
+      const age = now - gain.at,
+        t = age / 1400;
+      if (t < 0 || t > 1) continue;
+      const p = pos(gain.x, gain.y),
+        y = p.y - unit * 0.5 - t * 34;
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, (1 - t) * 3);
+      ctx.font = '700 17px system-ui';
+      ctx.textAlign = 'center';
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#17382dcc';
+      ctx.strokeText('+' + gain.amount, p.x, y);
+      ctx.fillStyle = '#fff7c8';
+      ctx.fillText('+' + gain.amount, p.x, y);
+      const a = MATERIAL_ART[gain.kind];
+      if (a) ctx.drawImage(art.frameImages[a[0]][a[1]], p.x + 17, y - 16, 19, 19);
+      ctx.restore();
+    }
     if (selected) {
       const p = pos(selected.x, selected.y);
       ctx.strokeStyle = '#ffe0a58a';
@@ -819,6 +862,12 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
   requestAnimationFrame(frame);
   const thumbnails = new Map();
   return {
+    showGain(reward) {
+      if (reward.amount > 0) {
+        gains.push({ ...reward, at: performance.now() });
+        if (gains.length > 32) gains.shift();
+      }
+    },
     thumbnail(atlas, index) {
       if (!ready) return null;
       const key = atlas + index;

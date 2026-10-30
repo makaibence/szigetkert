@@ -76,19 +76,26 @@ export function ensureChapter(s) {
     }
   }
   c.storyRevision = 3;
+  for (const p of s.adventure.sites) p.noticeAccepted ??= !!p.inspected && !p.baseWelcomePending;
   const home = s.adventure.sites.find((p) => p.id === 'house');
   if (home?.restored) home.name = 'Az ács otthona';
   ensureMerchant(s);
   return s;
 }
 export function ensureMerchant(s) {
+  const existing = s.adventure.trader,
+    yard = s.adventure.sites.find((p) => p.id === 'tradepost');
+  if (existing?.chapterMerchant && s.worldVersion === 4 && yard) {
+    existing.x = yard.x - 1;
+    existing.y = yard.y + 1;
+  }
   if (
     !s.adventure.sites.some((p) => p.kind === 'bridge' && p.restored) ||
     s.adventure.trader?.chapterMerchant
   )
     return;
   const desired =
-    s.worldVersion === 4 ? { x: 16, y: 13 } : s.adventure.sites.find((p) => p.id === 'tradepost');
+    s.worldVersion === 4 ? { x: 15, y: 16 } : s.adventure.sites.find((p) => p.id === 'tradepost');
   if (!desired) return;
   let point = { x: desired.x, y: desired.y };
   if (s.worldVersion !== 4) {
@@ -318,7 +325,7 @@ export function currentTask(s) {
   if (!hasType(s, 'farm'))
     return make(
       'Élelem a dolgozóknak',
-      'Hozd rendbe a bázistól északra fekvő kertet.',
+      'A szigeten egy régi kert nyomai rejtőznek. Találd meg, és hozd rendbe.',
       'garden',
       site('garden')?.cost,
     );
@@ -332,7 +339,7 @@ export function currentTask(s) {
   if (!hasType(s, 'quarry'))
     return make(
       'Kő a javításokhoz',
-      'A teleptől északra áll a régi kőbánya. Hozd működésbe.',
+      'Valahol a szigeten egy elhagyott kőbánya rejtőzik. Fedezd fel, és hozd működésbe.',
       'quarry',
       site('quarry')?.cost,
     );
@@ -354,13 +361,13 @@ export function currentTask(s) {
     if (carpenterWaiting(s))
       return make(
         'Vendég a bázisnál',
-        'Egy ács szeretne beszélni veled. Térj vissza a bázishoz.',
+        'Az ajtón hagyott üzenet szerint az ács a bázisodnál keres. Térj vissza, és beszélj vele.',
         'camp',
       );
     if (!s.chapter.carpenterIntro)
       return make(
         'Egy elhagyott ház',
-        'A műhelytől délre vezető rövid ösvényen egy viharvert ház áll. Vizsgáld meg.',
+        'Egy viharvert ház még őrizheti a régi lakója nyomait. Keresd meg a szigeten.',
         'house',
       );
     return make(
@@ -385,6 +392,12 @@ export function currentTask(s) {
       'tradepost',
       site('tradepost')?.cost,
     );
+  if (firstChapterComplete(s))
+    return make(
+      'Az első fejezet teljes',
+      'A telepek és műhelyek elkészültek. A kereskedő további megrendelései opcionálisak; új történeti fejezet még nincs ebben a változatban.',
+      'tradepost',
+    );
   const order = activeOrder(s, 'tradepost');
   if (order)
     return make(
@@ -398,5 +411,16 @@ export function currentTask(s) {
     'A kereskedő raktára',
     'Keresd fel a kereskedőudvart, hogy megtudd, milyen javításhoz vásárol anyagot a kereskedő.',
     'tradepost',
+  );
+}
+
+export function firstChapterComplete(s) {
+  return (
+    !!s.chapter?.completedOrders.includes('mason-sample') &&
+    s.chapter.completedOrders.includes('house-repair') &&
+    hasType(s, 'tradepost') &&
+    ['farm', 'lumber', 'quarry', 'sawmill', 'mason'].every((type) =>
+      s.buildings.some((b) => b.type === type && b.level >= 3),
+    )
   );
 }

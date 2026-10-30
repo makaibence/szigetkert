@@ -1492,3 +1492,36 @@ footer {
   z-index: 2;
   box-shadow: 0 -8px 12px #f3e8cf;
 }
+
+/* 0.13: one discovery surface, consistent header and clear primary actions. */
+#detail .site-head {
+  position: relative;
+  top: auto;
+  background: transparent;
+  padding: 4px 0 8px;
+}
+.craft-time {
+  margin-bottom: 18px;
+}
+#deliverorder {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 14px;
+  border: 1px solid #527634;
+  border-radius: 11px;
+  background: linear-gradient(#779f48, #4e712e);
+  color: #fff9e6;
+  font-weight: 650;
+  box-shadow: 0 2px 0 #3b5424;
+}
+#deliverorder:disabled {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+#storyactions button:last-child:not(:first-child) {
+  background: transparent;
+  color: #5a654e;
+  box-shadow: none;
+  border: 1px solid #c7c4a5;
+}
