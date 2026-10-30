@@ -1067,3 +1067,279 @@ nav button.active {
   min-width: 0;
   width: 100%;
 }
+
+/* First base discovery: persistent, readable starter-supply card. */
+.base-rewards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+.base-rewards .resource {
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: center;
+  gap: 3px 6px;
+  padding: 12px 5px;
+  border: 1px solid #cfb88988;
+  border-radius: 12px;
+  background: #fff9e9;
+  color: #554631;
+}
+.base-reward-caption {
+  font-size: 12px;
+  color: #766448;
+  margin: 12px 0 5px;
+}
+.base-reward-label {
+  grid-column: 1/-1;
+  font-size: 11px;
+  text-align: center;
+}
+.base-rewards .resource b {
+  font-size: 19px;
+  line-height: 27px;
+  text-shadow: none;
+}
+.base-rewards .ico {
+  width: 25px;
+  height: 27px;
+}
+#storyextras .hint {
+  margin: 8px 0 16px;
+}
+/* 0.10: one shared material icon system, backpack and meaningful workshop panels. */
+#resources {
+  display: none;
+}
+header {
+  justify-content: flex-end;
+  pointer-events: none;
+}
+#settings,
+#backpack {
+  pointer-events: auto;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+}
+#backpack {
+  display: grid;
+  place-items: center;
+  background: linear-gradient(#3d5666, #233846);
+  border: 1px solid #a0b5bb66;
+  padding: 5px;
+}
+#backpack .material-icon {
+  width: 32px;
+  height: 32px;
+}
+#supply {
+  top: calc(env(safe-area-inset-top) + 9px);
+  left: 12px;
+  right: auto;
+  min-height: 42px;
+  max-width: calc(100vw - 116px);
+  font-size: 11px;
+  padding: 8px 12px;
+}
+.material-icon {
+  display: inline-block;
+  object-fit: contain;
+  width: 25px;
+  height: 25px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.material-amounts {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 7px 11px;
+  align-items: center;
+  vertical-align: middle;
+}
+.material-amount {
+  display: inline-grid;
+  grid-template-columns: 24px auto;
+  align-items: center;
+  gap: 0 4px;
+  font-size: 12px;
+  color: #57462c;
+}
+.material-amount .material-icon {
+  width: 24px;
+  height: 24px;
+}
+.material-name {
+  grid-column: 1/-1;
+  text-align: center;
+  font-size: 9px !important;
+  color: #87734e !important;
+}
+.material-amount.missing {
+  color: #a24b32;
+}
+.material-amount strong {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+.inventory-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: #fff8e9;
+  border: 1px solid #d5bf91;
+  border-radius: 13px;
+  padding: 13px 5px;
+  text-align: center;
+}
+.inventory-item .material-icon {
+  width: 45px;
+  height: 45px;
+}
+.inventory-item b {
+  font-size: 11px;
+}
+.inventory-item strong {
+  font-size: 18px;
+  color: #51412d;
+}
+.quest-story + .quest-story {
+  margin-top: 12px;
+}
+.quest-story small .material-amounts {
+  margin-top: 7px;
+}
+.quest-story .material-amounts {
+  margin: 7px 0;
+}
+.quest-story button {
+  width: 100%;
+  margin-top: 9px;
+  min-height: 40px;
+}
+#detail {
+  max-height: calc(100svh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 175px);
+  overflow-y: auto;
+}
+#detail .site-rows {
+  display: block;
+}
+#detail .site-rows > div:not(.craft-controls) {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0;
+}
+#detail .site-rows > div > span {
+  max-width: 43%;
+}
+#detail .site-rows > div > b {
+  max-width: 65%;
+}
+#detail .site-rows > .material-amounts {
+  display: inline-flex;
+  margin: 8px 0;
+}
+#detail .site-rows .quest-story {
+  padding: 12px;
+  font-size: 12px;
+}
+.craft-controls {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+.craft-controls button {
+  flex: 1;
+  min-height: 40px;
+  font-size: 12px;
+}
+.craft-controls button:disabled {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+.recipe-arrow {
+  padding: 0 7px;
+  color: #8e774b;
+  font-size: 20px;
+}
+#readycount {
+  display: inline-grid;
+  place-items: center;
+  background: #d5b35f;
+  color: #273c32;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 9px;
+  font-size: 10px;
+  margin-left: 2px;
+}
+#readycount[hidden] {
+  display: none;
+}
+#toast.show {
+  pointer-events: auto;
+  cursor: pointer;
+}
+#toast {
+  top: calc(env(safe-area-inset-top) + 105px);
+  max-width: calc(100vw - 28px);
+  font-size: 12px;
+  line-height: 1.5;
+}
+#savedislands {
+  display: grid;
+  gap: 7px;
+  margin: 10px 0;
+}
+#savedislands button {
+  font-size: 12px;
+}
+
+/* Keep processing and cost rows independent from legacy two-column detail grids. */
+#detail {
+  max-height: min(
+    62svh,
+    calc(100svh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 175px)
+  );
+}
+#detail .site-rows > .craft-controls {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+#detail .site-rows > .craft-controls button {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+}
+#detail .site-rows > div.material-row:not(.craft-controls) {
+  display: block;
+}
+#detail .site-rows > .material-row > span {
+  display: block;
+  max-width: none;
+}
+#detail .site-rows > .material-row > b {
+  display: block;
+  max-width: none;
+  text-align: left;
+  margin-top: 6px;
+}
+#detail .material-row .material-amounts {
+  gap: 8px 16px;
+}
+#detail .site-actions button {
+  min-height: 44px;
+}
+.material-name {
+  font-size: 10px !important;
+}

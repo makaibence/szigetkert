@@ -27,7 +27,7 @@ assert.equal(s.resources.food, 0);
 const before = { ...s.resources };
 assert.ok(visit(s, 'camp').ok);
 const after = { ...s.resources };
-assert.equal(after.food - before.food, 30);
+assert.equal(after.food - before.food, 12);
 assert.equal(after.wood - before.wood, 30);
 assert.ok(visit(s, 'camp').ok);
 assert.deepEqual(s.resources, after);
@@ -39,7 +39,7 @@ assert.equal(s.resources.food, food);
 assert.ok(visit(s, 'garden').ok);
 assert.ok(restoreSite(s, 'garden'));
 assert.ok(s.adventure.sites.find((p) => p.id === 'garden').x < 15);
-assert.equal(rates(s).food, 9 / 60);
+assert.equal(rates(s).food, 4 / 60);
 assert.ok(!s.unlocked.includes('main'));
 assert.ok(visit(s, 'lumber').ok);
 assert.ok(restoreSite(s, 'lumber'));
@@ -82,7 +82,7 @@ assert.equal(hungry.workers[0].energy, energy);
 assert.equal(hungry.economy.supply, supply);
 assert.ok(hungry.resources.food >= 0);
 const summary = supplySummary(serial);
-assert.equal(summary.production, 9);
+assert.equal(summary.production, 4);
 assert.equal(summary.demand, 1);
 assert.equal(summary.total, summary.working + summary.resting + summary.waiting);
 // Reading a clue cannot remotely claim the physical discovery.
@@ -131,7 +131,7 @@ const raw4 = JSON.stringify(legacy),
   };
 const imported = loadGame(storage);
 assert.equal(imported.writable, true);
-assert.equal(imported.state.version, 5);
+assert.equal(imported.state.version, 6);
 assert.equal(storage.getItem('szigetkert.backup.pre-supply-v5'), raw4);
 assert.equal(storage.getItem(STORE), raw4);
 assert.deepEqual(imported.state.resources, legacy.resources);
@@ -139,7 +139,7 @@ const away = switchCampaign(imported.state),
   back = switchCampaign(away);
 assert.deepEqual(back.resources, legacy.resources);
 assert.deepEqual(back.buildings, legacy.buildings);
-assert.equal(validateCampaign(JSON.parse(JSON.stringify(back))).version, 5);
+assert.equal(validateCampaign(JSON.parse(JSON.stringify(back))).version, 6);
 console.log(
   'PASS: v4 raw backup created before writes; supplies and archived old city survive reversible island switching.',
 );

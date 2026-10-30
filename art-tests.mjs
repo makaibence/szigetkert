@@ -32,7 +32,7 @@ const context = vm.createContext({
   fetch: async () => ({ ok: true, json: async () => ['./assets/frames.json'] }),
   caches: {
     open: async (name) => {
-      assert.match(name, /v9-release-5$/);
+      assert.match(name, /v10-workshops-4$/);
       return {
         add: async () => {},
         match: async (request) =>

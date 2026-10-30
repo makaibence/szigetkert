@@ -1,4 +1,4 @@
-SZIGETKERT 0.9 – MEGJELENÍTÉS ÉS FORRÁSOK
+SZIGETKERT 0.10 – MEGJELENÍTÉS ÉS FORRÁSOK
 
 A meglévő Canvas2D világ és helyi Three.js/WebGL karaktermegjelenítés maradt.
 A világ festett 2D-elemekből készül fix izometrikus kamerával, a szereplők
@@ -46,3 +46,21 @@ assets/food-v09.png. Beépített imagegen, átlátszó PNG, eredeti kép megőri
 Forrás: exec-b1b60d1f-2302-4d6f-ae3f-f44c854da6ad.png, a Codex generated_images mappájában.
 Végső prompt:
 Use case: stylized-concept. Project asset: one small mobile game resource icon for prepared FOOD, not wheat. A charming hand-painted 3D-effect woven wicker provisions basket containing a crusty bread loaf, a red apple and a small covered earthenware food pot. Cohesive premium cozy isometric island adventure game art, warm natural colors, light from upper left, readable strong silhouette at 24 pixels, softly detailed edges. Single icon centered, fills 85 percent of a square image with generous transparent margin, genuine transparent background, no ground plane, no scenery, no text, no labels, no border, no other separate items.
+
+
+0.10 ÚJ MŰHELYEK ÉS TÁRGYAK
+Eszköz: beépített imagegen; eredeti generált PNG-k, átlátszó háttérrel.
+assets/workshops-v10.png, 1536×1024: három fűrészműhely-szint, három
+kőfaragóműhely-szint, szénégető, kovácsműhely, ács lakóháza.
+Forrás: exec-07267897-156a-4d0f-9892-1f65efd9b40f.png.
+assets/materials-v10.png, 1280×1280: deszka, faragott kő, ezüst, faszén,
+vasérc, vas, hátizsák, megrendelés és szerszámok.
+Forrás: exec-6522dcf6-eebc-4a5f-b7cd-254f29d3a1ca.png.
+A generált források a Codex generated_images mappájában is megmaradtak.
+Generálási brief: egységes, festett, prémium mobilos izometrikus szigetjáték;
+meleg természetes színek, bal felső megvilágítás, részletes fa/kő/cserép felületek,
+összeillő perspektíva és méretarány; különálló 3×3 elemek, feliratok és háttér nélkül.
+A tárgyaknál kis méretben is olvasható sziluett és azonos fényirány.
+A forrásképek változatlanok, frames.json külön határolja és maszkolja az elemeket.
+A működési animáció külön kódréteg; a mozgó elemek nem mentési adatok.
+A kalapács a csontozott kézhez kapcsolódik, csak a műhelyes munka alatt látható.

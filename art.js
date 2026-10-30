@@ -1,6 +1,13 @@
 export const ART_VERSION = 'painted-adventure-2';
 export function validateArtManifest(manifest) {
-  for (const [name, count] of Object.entries({ village: 9, nature: 16, props: 9, expedition: 9 })) {
+  for (const [name, count] of Object.entries({
+    village: 9,
+    nature: 16,
+    props: 9,
+    expedition: 9,
+    workshops: 9,
+    items: 9,
+  })) {
     const atlas = manifest?.[name];
     if (
       !atlas ||
@@ -28,15 +35,24 @@ export async function loadArt() {
       i.onerror = () => reject(Error('Nem tölthető be: ' + src));
       i.src = src;
     });
-  const [village, nature, meadow, props, expedition] = await Promise.all([
+  const [village, nature, meadow, props, expedition, workshops, items] = await Promise.all([
     load(manifest.village.src),
     load(manifest.nature.src),
     load('./assets/terrain-v08.png'),
     load(manifest.props.src),
     load(manifest.expedition.src),
+    load(manifest.workshops.src),
+    load(manifest.items.src),
   ]);
   const pixels = {};
-  for (const [name, img] of Object.entries({ village, nature, props, expedition })) {
+  for (const [name, img] of Object.entries({
+    village,
+    nature,
+    props,
+    expedition,
+    workshops,
+    items,
+  })) {
     const c = document.createElement('canvas');
     c.width = img.naturalWidth;
     c.height = img.naturalHeight;
@@ -46,8 +62,8 @@ export async function loadArt() {
   }
   const frameImages = {},
     framePixels = {};
-  for (const name of ['village', 'nature', 'props', 'expedition']) {
-    const source = { village, nature, props, expedition }[name];
+  for (const name of ['village', 'nature', 'props', 'expedition', 'workshops', 'items']) {
+    const source = { village, nature, props, expedition, workshops, items }[name];
     frameImages[name] = [];
     framePixels[name] = [];
     for (const [index, frame] of manifest[name].frames.entries()) {
@@ -101,6 +117,8 @@ export async function loadArt() {
     meadow,
     props,
     expedition,
+    workshops,
+    items,
     materials,
     frameImages,
     framePixels,
@@ -113,4 +131,13 @@ export function buildingFrame(type, level = 1) {
   return level >= 2
     ? { hut: 5, lumber: 6, quarry: 7, farm: 8, market: 4 }[type]
     : { hut: 0, lumber: 1, quarry: 2, farm: 3, market: 4 }[type];
+}
+
+export function buildingArt(type, level = 1) {
+  if (type === 'sawmill') return { atlas: 'workshops', index: Math.min(2, level - 1) };
+  if (type === 'mason') return { atlas: 'workshops', index: 3 + Math.min(2, level - 1) };
+  if (['kiln', 'forge', 'residence'].includes(type))
+    return { atlas: 'workshops', index: { kiln: 6, forge: 7, residence: 8 }[type] };
+  if (type === 'tradepost') return { atlas: 'village', index: 4 };
+  return { atlas: 'village', index: buildingFrame(type, level) };
 }

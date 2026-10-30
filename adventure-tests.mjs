@@ -17,18 +17,18 @@ import {
   siteCost,
 } from './adventure.js';
 import { fresh, validate, terrainAt, resourcesAt, resourceTarget, upgrade } from './engine.js';
-import { findPath, revealAround, driveHero, walkable } from './navigation.js';
+import { findPath, revealAround, driveHero, walkable, canStand } from './navigation.js';
 import { queueGather, advanceGathering } from './gathering.js';
 import { loadGame, saveGame, STORE } from './save.js';
 import { syncWorkers, updateWorkers, produceOfflineWorkers } from './workers.js';
 const s = freshAdventure(Date.now(), 12345);
-assert.equal(s.worldVersion, 3);
+assert.equal(s.worldVersion, 4);
 assert.ok(walkable(s, 2, 10));
 assert.equal(s.buildings.length, 0);
 assert.deepEqual(validateCampaign(structuredClone(s)), s);
 // Main path is reachable, river is a real movement barrier, repaired bridge opens it.
 s.adventure.introSeen = true;
-s.resources = { wood: 200, stone: 100, food: 20, gold: 20 };
+s.resources = { ...s.resources, wood: 200, stone: 100, food: 20, gold: 20 };
 for (let x = 0; x < 15; x++)
   for (let y = 0; y < 30; y++) if (!s.revealed.includes(`${x},${y}`)) s.revealed.push(`${x},${y}`);
 for (const id of ['camp', 'lumber', 'quarry']) {
@@ -59,7 +59,7 @@ old.resources.wood = 777;
 old.buildings[0].level = 2;
 const legacy = prepareCampaign(validate(structuredClone(old)));
 const next = switchCampaign(legacy);
-assert.equal(next.worldVersion, 3);
+assert.equal(next.worldVersion, 4);
 assert.equal(next.archive.resources.wood, 777);
 assert.equal(next.archive.buildings[0].level, 2);
 const back = switchCampaign(next);
@@ -129,7 +129,7 @@ const start = { ...j.hero };
 driveHero(j, { x: 0, y: -1 }, 0.1);
 assert.ok(j.hero.x < start.x && j.hero.y < start.y);
 for (let i = 0; i < 500; i++) driveHero(j, { x: -1, y: 0 }, 0.1);
-assert.ok(walkable(j, Math.round(j.hero.x), Math.round(j.hero.y)));
+assert.ok(canStand(j, j.hero.x, j.hero.y));
 // Rapid taps share one bounded job and credit only actual timed impacts.
 const g = fresh();
 let target;
@@ -155,7 +155,7 @@ const saved = JSON.parse(JSON.stringify(s));
 assert.ok(validateCampaign(saved));
 // Workers physically return inside; idle/no-source workers are not left on the road.
 const w = fresh();
-w.resources = { wood: 100, stone: 100, food: 10, gold: 20 };
+w.resources = { ...w.resources, wood: 100, stone: 100, food: 10, gold: 20 };
 w.buildings.push({ id: 'building:2', type: 'lumber', level: 1, x: 5, y: 4 });
 syncWorkers(w);
 assert.equal(w.workers[0].phase, 'inside');

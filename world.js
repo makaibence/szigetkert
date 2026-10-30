@@ -60,7 +60,20 @@ export function resourcesAt(x, y, version = 1) {
   return result;
 }
 export function liveResources(s, x, y) {
-  return resourcesAt(x, y, s.worldVersion).filter((r) => !s.resourceState?.[r.id]?.cleared);
+  return resourcesAt(x, y, s.worldVersion).filter(
+    (r) =>
+      !s.resourceState?.[r.id]?.cleared &&
+      !(
+        s.chapter &&
+        (s.adventure?.sites.some(
+          (p) =>
+            p.kind === 'building' &&
+            Math.hypot(p.x - r.x, p.y - r.y) < (r.kind === 'wood' ? 1.6 : 1.25),
+        ) ||
+          (s.adventure?.trader?.active &&
+            Math.hypot(s.adventure.trader.x - r.x, s.adventure.trader.y - r.y) < 1.5))
+      ),
+  );
 }
 export function terrainAt(s, x, y) {
   const bridge = s.adventure?.sites?.find((p) => p.kind === 'bridge' && p.x === x && p.y === y);
@@ -68,7 +81,10 @@ export function terrainAt(s, x, y) {
   if (
     s.adventure?.sites?.some(
       (p) =>
-        ((p.kind === 'building' && !p.restored) || p.kind === 'wreck' || p.kind === 'marker') &&
+        ((p.kind === 'building' && !p.restored) ||
+          p.kind === 'wreck' ||
+          p.kind === 'marker' ||
+          (p.kind === 'ore' && p.oreLeft !== 0)) &&
         p.x === x &&
         p.y === y,
     )
@@ -80,6 +96,12 @@ export function terrainAt(s, x, y) {
     : base;
 }
 export function regionUnlocked(s, x, y) {
+  if (
+    s.worldVersion === 4 &&
+    (x >= 22 || y >= 16) &&
+    !s.chapter?.completedOrders?.includes('house-repair')
+  )
+    return false;
   if (s.worldVersion >= 2)
     return x < 15 || !!s.adventure?.sites?.find((p) => p.id === 'bridge' && p.restored);
   return (

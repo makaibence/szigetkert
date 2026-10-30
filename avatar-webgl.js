@@ -143,6 +143,17 @@ export class AvatarView {
       roughness: 0.45,
       metalness: 0.3,
     });
+    const mallet = new THREE.Group();
+    mallet.name = 'SzigetMallet';
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.018, 0.3, 8), wood);
+    shaft.position.y = 0.1;
+    mallet.add(shaft);
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.08, 0.09), metal);
+    head.position.y = 0.26;
+    mallet.add(head);
+    mallet.visible = false;
+    hand.add(mallet);
+    this.mallet = mallet;
     const build = (pick) => {
       const group = new THREE.Group();
       const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.019, 0.53, 9), wood);
@@ -221,6 +232,7 @@ export class AvatarView {
         }
       });
     }
+    actor.mallet = root.getObjectByName('SzigetMallet');
     actor.axe = root.getObjectByName('SzigetAxe');
     actor.pick = root.getObjectByName('SzigetPick');
     actor.carried = root.getObjectByName('SzigetCarried');
@@ -236,7 +248,7 @@ export class AvatarView {
         ? 'Sprint_Loop'
         : state === 'walk'
           ? 'Walk_Loop'
-          : state === 'chop' || state === 'mine'
+          : state === 'chop' || state === 'mine' || state === 'craft'
             ? 'TreeChopping_Loop'
             : 'Idle_Loop';
     for (const actions of actor.actions) {
@@ -250,7 +262,8 @@ export class AvatarView {
         next.time =
           ((phase / (state === 'run' ? 0.76 : 0.46)) * next.getClip().duration) %
           next.getClip().duration;
-      if (state === 'chop' || state === 'mine') next.time = phase % this.clipDuration;
+      if (state === 'chop' || state === 'mine' || state === 'craft')
+        next.time = phase % this.clipDuration;
     }
     actor.activeClip = clip;
     actor.state = state;
@@ -268,6 +281,7 @@ export class AvatarView {
       ['walk', 'run'].includes(hero.action) ? hero.walkPhase || 0 : hero.workTime || 0,
       actor,
     );
+    if (actor.mallet) actor.mallet.visible = hero.action === 'craft';
     actor.axe.visible = hero.action === 'chop';
     actor.pick.visible = hero.action === 'mine';
     const carrying = !!hero.carried && hero.action !== 'chop' && hero.action !== 'mine';

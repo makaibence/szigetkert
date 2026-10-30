@@ -1,3 +1,4 @@
+import { CHAPTER_SITES, CHAPTER_TRAILS } from './content.js';
 // Stable authored locations. Player-facing lists reveal only places already discovered.
 export const LOCATIONS = [
   { id: 'wreck', kind: 'wreck', x: 2, y: 11, name: 'Partra sodródott roncs', art: 0 },
@@ -109,7 +110,11 @@ export const TRAILS = [
 ];
 export function pathDistance(x, y, version = 2) {
   let best = Infinity;
-  for (const line of version >= 3 ? [...TRAILS, ...EARLY_TRAILS] : TRAILS)
+  for (const line of version >= 4
+    ? CHAPTER_TRAILS
+    : version >= 3
+      ? [...TRAILS, ...EARLY_TRAILS]
+      : TRAILS)
     for (let i = 1; i < line.length; i++) {
       const [ax, ay] = line[i - 1],
         [bx, by] = line[i],
@@ -121,6 +126,21 @@ export function pathDistance(x, y, version = 2) {
   return best;
 }
 export function authoredTerrain(x, y, noise, version = 2) {
+  if (version >= 4) {
+    const west = ((x - 8) / 7.2) ** 2 + ((y - 9.6) / 6.3) ** 2 < 1;
+    const east = ((x - 20.5) / 7.1) ** 2 + ((y - 12) / 6.5) ** 2 < 1;
+    if (!(west || east)) return 'water';
+    if (x === 14) return 'water';
+    if (Math.hypot(x - 16, y - 13) < 1.6) return 'grass';
+    if ((x === 11 && y === 5) || (x === 12 && y === 6) || (x === 23 && y === 8)) return 'mountain';
+    if (
+      CHAPTER_SITES.some((p) => Math.hypot(p.x - x, p.y - y) < (p.kind === 'building' ? 2 : 1)) ||
+      pathDistance(x, y, 4) < 1.1
+    )
+      return 'grass';
+    if (noise(x + 7, y + 13) > 0.18) return 'forest';
+    return 'grass';
+  }
   const sites = version >= 3 ? [...LOCATIONS, ...EARLY_SITES] : LOCATIONS;
   const west = ((x - 8) / 7) ** 2 + ((y - 10) / 7) ** 2 < 1;
   const east = ((x - 24) / 15) ** 2 + ((y - 21) / 17) ** 2 < 1 + Math.sin(y * 0.65) * 0.04;

@@ -1,83 +1,77 @@
-SZIGETKERT 0.9 – FRISSÍTÉS ÉS PRÓBAJÁTÉK
+SZIGETKERT 0.10 – FRISSÍTÉS ÉS PRÓBA
+
+1. A jelenlegi játékban: Beállítások → Mentés exportálása. Őrizd meg a JSON-t.
+2. Bontsd ki a szigetkert-v10-teljes.zip fájlt. Nyisd meg a benne lévő
+   szigetkert mappát. Ez a teljes projekt, nem csak néhány javítófájl.
+3. GitHubon a makaibence/szigetkert tároló Code lapján válaszd az
+   Add file → Upload files lehetőséget.
+4. Finderből húzd be a szigetkert mappa TELJES TARTALMÁT a feltöltőfelületre.
+   Az assets és lib mappa is kell, a bennük lévő almappákkal együtt.
+   Az index.html közvetlenül a tároló fő szintjére kerüljön, ne egy új
+   szigetkert almappába. A ZIP-et ne töltsd fel a játék helyett.
+   A Choose your files fájlválasztó nem alkalmas a teljes mappaszerkezet
+   kiválasztására. A Finderből való behúzás megőrzi a mappákat.
+5. Kattints a Commit changes gombra. Azonos nevű fájlok frissülnek.
+   A régi fájlokat előtte nem kell törölnöd. Várd meg az Actions oldalon
+   a legújabb pages build and deployment zöld pipáját.
+6. Nyisd meg: https://makaibence.github.io/szigetkert/
+   Beállítások → Frissítés keresése. A letöltés után: Mentés és frissítés.
+   A Beállításokban Játékverzió: 0.10, Mentés: v6 jelenjen meg.
+   Várd meg az „Offline játékra kész.” jelzést.
+7. A kisebb új pályához válaszd:
+   „Új kaland a kisebb pályán, a szigeteim megőrzésével”.
+   A régi sziget nem törlődik: a Beállítások Megőrzött sziget gombjaival
+   vissza tudsz váltani. Az export valamennyi megőrzött szigetet tartalmazza.
+
+IPHONE TELEPÍTÉS
+Safariban nyisd meg a fenti játékcímet, majd Megosztás → Hozzáadás a
+Főképernyőhöz. Az ikonnal indítva teljes képernyőn működik.
+Meglévő ikonodat nem kell törölni vagy újratelepíteni a frissítéshez.
+Ne töröld a Safari webhelyadatait: azokban van a helyi játékállás.
+A laptop a közzététel után nem szükséges a telefonos játékhoz.
+GitHub Pagesen a játék nyilvánosan elérhető; a mentés az adott eszközön marad.
+Nincs fiók, felhőmentés, adatbázis, követőkód vagy fizetős szolgáltatás.
 
 MI VÁLTOZOTT?
-A kezdőbázis nem termel. Első átvizsgáláskor egyszeri készletet ad: 30 fa,
-18 kő, 30 élelem. Régi, már átvizsgált bázisnál ez nem jár újra.
-Az első szigetrészen élelemtermelő kert található. Helyreállítása a kezdőkészletből
-elindítható, nem kell hozzá a híd vagy a túlpart. Első szinten 9 élelem/perc.
-A korábbi, túlparti gazdaságod a helyén marad és tovább működik.
-Élelem egyetlen közös készlet, kész ételt mutató kosárikonnal. Nincs külön búza.
-Kis, idővel újragyűjthető ehető növényzet segít, ha elfogyna a készlet.
+Kisebb, két összekötött szigetrész, követhető ösvények, rövid mellékágak.
+A régi nagy pálya nem zsugorodik a városodra: megőrzött szigetként marad meg.
+A bázis első megvizsgálásakor tartós üzenet és egyszeri kezdőkészlet jár.
+Az új kalandban: 30 fa, 18 kő, 12 élelem. A bázis nem termel.
+A már átvett régi készletet nem adjuk újra, a korábbi jutalomüzenet megmarad.
+Az első szigetrészen kert, favágótelep és kőbánya indítható.
+A kert közvetlenül élelmet ad, nincs külön búza–kenyér rendszer.
+Alapszinten 4 élelem/perc. A dolgozók önállóan esznek és pihennek.
+Az alaptelepek 2–3. szintjéhez csak fa és kő kell, nem élelem vagy arany.
+A fejleszthető/helyreállítható helyszíneket nyíl és a Sziget gomb száma jelzi.
+Az anyagok a felső hátizsákgombbal érhetők el, nem foglalnak hosszú felső sort.
+Ugyanaz a rajzolt ikon szerepel a készletben, költségnél, receptnél és jutalomnál.
+Az „aktuális készlet / szükséges mennyiség” értékek segítenek a tervezésben.
+A feldolgozó műhelyekhez előre kiválasztott adagokat adhatsz be (1, 3, 6).
+Az alapanyagot indításkor levonjuk; nincs észrevétlen, végtelen fogyasztás.
+A kész termék magától a közös hátizsákba kerül. A sor bezárás után folytatódik.
+A további anyagok és helyszínek felfedezéskor válnak láthatóvá.
+Konkrét, többanyagos megrendelések adnak ezüstöt. Az ezüst felszerelésre költhető.
+A ritka régi arany megmarad, nem váltottuk át és nem költjük el automatikusan.
+A fűrészműhely, kőbánya és feldolgozók működés közben mozgó részleteket kapnak.
+A fontos zöld üzenetek 9–14 másodpercig maradnak, sorban jelennek meg.
+Koppintással továbbléptethetők. A Feladatok panelen a kártyák nem fedik egymást.
+A megtalálható titkok tartalmát ez az útmutató nem sorolja fel.
 
-MUNKA ÉS ELLÁTÁS
-A kis felső Ellátottság gombra koppintva látod a közös 0–100%-os mutatót,
-a dolgozó/pihenő/várakozó létszámot, termelést, tervezett fogyasztást,
-egyenleget és fogyó készletnél a becsült hátralévő időt.
-A fogyasztási terv munkásonként kb. 1 élelem/perc teljes terhelésnél; a tényleges
-felhasználás étkezéskor történik. Várakozás és hosszabb utak miatt eltérhet.
-Kb. két perc tényleges munka (az anyagleadás idejével együtt) után a munkás
-magától visszamegy, leteszi az anyagot, eszik és pihen.
-Teljes adag 2 élelem, pihenő 20 mp. Kevés ételnél részadag és hosszabb pihenő;
-étel nélkül 40 mp és részleges energiafeltöltődés. Senki nem hal meg.
-A kihagyott étkezés csökkenti a közös ellátottságot, a sikeres étkezés javítja.
-Az alacsonyabb ellátottság és egyéni energia csökkenti a munkatempót.
-Energiacsík kijelöléskor vagy alacsony energiánál látszik, nem állandóan mindenkin.
-Az embereket nem kell kézzel etetned. Neked az utánpótlást kell megszervezned.
-Bezárás alatt az egyéni energia nem csökken. Legfeljebb 8 órás, véges ismert
-forrásokra korlátozott becsült távolléti termelés továbbra is van, élelemfogyasztással.
+IRÁNYÍTÁS ÉS MENTÉS
+Egy ujjal húzd és tartsd a világot: a karakter az irányba fut. Felengedésre megáll.
+Két ujjal mozgathatod/nagyíthatod a kamerát. Tárgyra koppintva odamegy dolgozni.
+Az ismételt gyors koppintás továbbra is gyorsítja a kézi gyűjtést, véges mennyiséggel.
+Automatikus mentés kb. két másodpercenként, valamint fontos műveleteknél.
+Távolléti termelés legfeljebb 8 óra, felfedezett véges lelőhelyekből.
+A műhelysor csak a már beadott adagokat végzi el. Távollétben az energia nem fogy.
+Beállítások → Mentés exportálása/importálása. Az exportot rendszeresen őrizd meg.
+Korábbi v1–v5 mentés betöltéskor v6-ra alakítható; előtte nyers biztonsági másolat készül.
+Az „Átalakítás előtti mentés letöltése” gombbal ez külön is letölthető.
+A túlparti régi gazdaság a helyén, azonosítója és fejlesztési szintje megtartásával
+fűrészműhellyé alakul. A már megtermelt élelem nem vész el. A korai kert megmarad.
 
-FELADATOK
-A Feladatok csak rövid címet és nyomot mutat. Nincs háromopciós eseményablak,
-és a nyom elolvasásától nem kapsz jutalmat vagy automatikus útvonalat.
-A tárgyat vagy szereplőt a világban kell megtalálnod és megközelítened.
-Látható tárgyra koppintva a karakter odamegy és megvizsgálja; eredményt csak
-ott kapsz, egyszer. A megtalált eredmény utána visszaolvasható.
-A kereskedő árai a helyszíni boltban maradnak, ezek valódi vásárlási műveletek,
-nem a történeti feladatot távolról teljesítő választások.
-
-IRÁNYÍTÁS
-Világon egy ujjal húzás és nyomva tartás: futás. Elengedés: megállás.
-Két ujjal: kamera és nagyítás. Tárgyra koppintás: megközelítés és vizsgálat.
-A rövid történeti bevezető után irányítási és ellátási útmutató indul.
-Bármikor újraolvasható: fogaskerék → Így működik a játék.
-
-FRISSÍTÉS GITHUBON
-1. A régi játékból először Mentés exportálása, a JSON-t őrizd meg.
-2. Csomagold ki a szigetkert-v09-teljes.zip fájlt.
-3. Finderben nyisd meg a kicsomagolt szigetkert mappát.
-4. GitHub: makaibence/szigetkert → Code → Add file → Upload files.
-5. A Finderből a szigetkert mappa TELJES TARTALMÁT húzd be, az assets és lib
-   mappákkal együtt. A Choose your files fájlválasztó helyett behúzást használj,
-   így a mappák szerkezete is megmarad. Ne a ZIP-et vagy a külső szigetkert mappát.
-6. Commit changes, majd Actions: a legújabb pages build and deployment zöld pipa.
-7. Telefonon játék → fogaskerék → Frissítés keresése, letöltés után Mentés és frissítés.
-8. Ellenőrizd: Játékverzió 0.9 · Mentés v5, majd várd meg az Offline játékra kész jelzést.
-A régi fájlokat és böngészőadatokat ne töröld. Az azonos fájlok felülíródnak.
-A GitHubon élő játék nem frissül pusztán ettől a helyi csomagtól.
-
-MENTÉSVÉDELEM
-v1–v4 mentés automatikusan v5-re átvehető. Megmaradnak az épületek, szintek,
-készletek, kitermelt nyersanyagok, megismert terület, tárgyak és korábbi döntések.
-A már meglévő térkép nem kerül lecserélésre. A korai kert szabad, elérhető
-helyen kerül be. A régi ház fejlesztési szintje megmarad, de már nem termel.
-A még függő régi esemény kereshető világobjektumot kap, nem teljesül magától.
-A két megőrzött sziget és a félbehagyott étkezés is exportálható/importálható.
-Az eredeti nyers v1–v4 mentés helyi biztonsági másolata írás előtt készül el;
-a fogaskeréknél Átalakítás előtti mentés letöltése gombbal külön lementhető.
-Nincs felhős szinkron. A böngészőadatok törlésétől a külön őrzött export véd.
-
-TELEPÍTÉS / HELYI INDÍTÁS
-Telefonon Safari: https://makaibence.github.io/szigetkert/
-Első betöltés internet mellett, Offline játékra kész jelzés után:
-Megosztás → Hozzáadás a Főképernyőhöz → Hozzáadás. A laptop utána nem kell.
-Laptoppal: a szigetkert mappában python3 serve.py, majd http://localhost:8080.
-Ne az index.html fájlra duplán kattintva indítsd. Nincs szükség csomagtelepítésre.
-Node.js csak az ellenőrzésekhez kell: node test.mjs.
-
-AMIT ÉRDEMES KIPRÓBÁLNOD
-– Az új kalandban a ház átvizsgálása, a készlet egyszeri átvétele, a korai kert.
-– Több munkásnál az automatikus pihenő és az Ellátottság panel.
-– Egy rövid nyom követése, a megtalált tárgy vizsgálata.
-– Bezárás/újranyitás és export/import. Ne töröld az eredeti mentésedet.
-A telefonos kényelmet, egyensúlyt és hosszabb használat alatti teljesítményt
-valódi iPhone 15-ön még véglegesíteni kell.
+HELYI INDÍTÁS
+A teljes projekt mappájában: python3 serve.py
+Nyisd meg az induláskor kiírt localhost-címet. HTTPS a közzétett PWA-hoz szükséges.
+Az index.html dupla kattintásos, file:// megnyitása nem támogatott indítás.
+Teszt: npm test (vagy node test.mjs), nincs csomagtelepítési lépés.

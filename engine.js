@@ -1,8 +1,11 @@
+import { EXTRA_RES, CRAFT_TYPES } from './content.js';
+import { advanceCrafting, validateProduction } from './production.js';
 import { SIZE, key, terrain, terrainAt, resourcesAt, liveResources } from './world.js';
 export { SIZE, key, terrain, terrainAt, resourcesAt, liveResources };
-export const VERSION = 5,
+export const VERSION = 6,
   CAP = 8 * 3600;
 export const TYPES = {
+  ...CRAFT_TYPES,
   hut: {
     name: 'Kunyhó',
     icon: '🏡',
@@ -49,6 +52,7 @@ export const RES = {
   stone: ['🪨', 'Kő'],
   food: ['🍲', 'Élelem'],
   gold: ['🪙', 'Arany'],
+  ...EXTRA_RES,
 };
 export function fresh(now = Date.now()) {
   const revealed = [];
@@ -58,7 +62,13 @@ export function fresh(now = Date.now()) {
     worldVersion: 1,
     nextBuildingId: 2,
     hero: { x: 4, y: 5, direction: 'se' },
-    resources: { wood: 65, stone: 40, food: 35, gold: 10 },
+    resources: {
+      wood: 65,
+      stone: 40,
+      food: 35,
+      gold: 10,
+      ...Object.fromEntries(Object.keys(EXTRA_RES).map((k) => [k, 0])),
+    },
     buildings: [{ id: 'building:1', x: 5, y: 5, type: 'hut', level: 1 }],
     resourceState: {},
     workers: [],
@@ -79,9 +89,11 @@ export const workerCount = (b) =>
 export const productionMultiplier = (b) =>
   workerCount(b) ? workerCount(b) * 1.3 ** ((b.level || 1) - 1) : 1.6 ** ((b.level || 1) - 1);
 export function upgradeCost(b) {
-  if (!b || b.type === 'hut' || (b.level || 1) >= 3) return null;
+  if (!b || ['hut', 'residence', 'tradepost'].includes(b.type) || (b.level || 1) >= 3) return null;
   const level = b.level || 1;
-  return { wood: 25 * level, stone: 20 * level, food: 10 * level, gold: 5 * level };
+  return CRAFT_TYPES[b.type] && !['residence', 'tradepost'].includes(b.type)
+    ? { wood: 16 * level, stone: 10 * level, planks: 2 * level }
+    : { wood: 18 * level, stone: 10 * level };
 }
 export function upgrade(s, id) {
   const b = s.buildings.find((b) => b.id === id),
@@ -91,11 +103,17 @@ export function upgrade(s, id) {
   b.level = (b.level || 1) + 1;
   return true;
 }
+export function baseRate(s, b) {
+  if (b.type === 'hut' || (b.type === 'market' && s.chapter)) return 0;
+  if (s.worldVersion === 4 && b.type === 'lumber') return 0.2;
+  if (s.worldVersion === 4 && b.type === 'quarry') return 0.16;
+  return b.type === 'farm' && s.chapter ? 4 / 60 : TYPES[b.type].rate;
+}
 export function buildingRate(s, b) {
-  return (b.type === 'hut' ? 0 : TYPES[b.type].rate) * productionMultiplier(b);
+  return baseRate(s, b) * productionMultiplier(b);
 }
 export function rates(s) {
-  const r = { wood: 0, stone: 0, food: 0, gold: 0 };
+  const r = Object.fromEntries(Object.keys(RES).map((k) => [k, 0]));
   for (const b of s.buildings) r[TYPES[b.type].output] += buildingRate(s, b);
   return r;
 }
@@ -104,6 +122,7 @@ export function tick(s, now = Date.now(), includeWorkers = true) {
     r = rates(s);
   for (const k in r)
     if (includeWorkers || (k !== 'wood' && k !== 'stone')) s.resources[k] += r[k] * dt;
+  advanceCrafting(s, dt);
   s.last = Math.max(s.last, now);
   return dt;
 }
@@ -168,17 +187,24 @@ export function harvestHit(s, target, now = Date.now(), credit = true) {
   const state =
     s.resourceState[node.id] ||
     (s.resourceState[node.id] = { hitsLeft: node.hits, cleared: false });
-  state.hitsLeft = Math.max(0, state.hitsLeft - 1);
+  const effort = Math.min(state.hitsLeft, s.chapter?.perks?.tools ? 2 : 1);
+  state.hitsLeft = Math.max(0, state.hitsLeft - effort);
   state.lastHit = now;
   if (credit) {
-    s.resources[node.kind] += node.yield;
-    s.gathered += node.yield;
+    s.resources[node.kind] += node.yield * effort;
+    s.gathered += node.yield * effort;
   }
   if (state.hitsLeft === 0 && !state.cleared) {
     state.cleared = true;
     state.clearedAt = now;
   }
-  return { ok: true, finished: state.cleared, kind: node.kind, amount: node.yield, id: node.id };
+  return {
+    ok: true,
+    finished: state.cleared,
+    kind: node.kind,
+    amount: node.yield * effort,
+    id: node.id,
+  };
 }
 export function gather(s, x, y) {
   const node = resourceTarget(s, x, y);
@@ -244,6 +270,8 @@ export function claim(s, id) {
 export function validate(input) {
   const s = input,
     n = (n) => Number.isFinite(n) && n >= 0 && n <= 1e15;
+  if (s && [1, 2, 3, 4, 5].includes(s.version) && s.resources)
+    for (const k of Object.keys(EXTRA_RES)) s.resources[k] ??= 0;
   const coord = (b) =>
     b &&
     Number.isInteger(b.x) &&
@@ -254,7 +282,7 @@ export function validate(input) {
     b.y < SIZE;
   if (
     !s ||
-    ![1, 2, 3, 4, 5].includes(s.version) ||
+    ![1, 2, 3, 4, 5, 6].includes(s.version) ||
     !s.resources ||
     !Object.keys(RES).every((k) => n(s.resources[k])) ||
     !Array.isArray(s.buildings) ||
@@ -320,7 +348,7 @@ export function validate(input) {
     )
       throw Error('Hibás épületadat.');
   }
-  if (![1, 2, 3].includes(s.worldVersion)) throw Error('Nem támogatott térképverzió.');
+  if (![1, 2, 3, 4].includes(s.worldVersion)) throw Error('Nem támogatott térképverzió.');
   s.workers ||= [];
   if (!Array.isArray(s.workers) || s.workers.length > s.buildings.length * 3)
     throw Error('Hibás munkásadat.');
@@ -413,6 +441,7 @@ export function validate(input) {
       )[0] || [4, 5];
     s.hero = { x: p[0], y: p[1], direction: 'se' };
   }
+  validateProduction(s);
   s.version = VERSION;
   return s;
 }

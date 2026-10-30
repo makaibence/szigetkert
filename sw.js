@@ -1,4 +1,4 @@
-const CACHE = 'szigetkert-shell-v9-release-5';
+const CACHE = 'szigetkert-shell-v10-workshops-4';
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'ACTIVATE_UPDATE') self.skipWaiting();
 });
@@ -16,7 +16,7 @@ self.addEventListener('install', (event) =>
         );
       const description = await (await cache.match('./assets/frames.json')).json();
       if (
-        !['village', 'nature', 'props', 'expedition'].every(
+        !['village', 'nature', 'props', 'expedition', 'workshops', 'items'].every(
           (name) => typeof description[name]?.src === 'string',
         )
       )

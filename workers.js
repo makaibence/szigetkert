@@ -1,5 +1,5 @@
-import { TYPES, resourceTarget, harvestHit, workerCount } from './engine.js';
-import { resourcesAt, key } from './world.js';
+import { TYPES, baseRate, resourceTarget, harvestHit, workerCount } from './engine.js';
+import { liveResources, key } from './world.js';
 import {
   ensureSupply,
   beginMeal,
@@ -80,7 +80,7 @@ export function findWork(s, w) {
     .flatMap((k) => {
       const [x, y] = k.split(',').map(Number);
       if (Math.hypot(x - owner.x, y - owner.y) > 8) return [];
-      return resourcesAt(x, y, s.worldVersion).filter(
+      return liveResources(s, x, y).filter(
         (n) =>
           n.kind === kind &&
           !s.resourceState[n.id]?.cleared &&
@@ -168,7 +168,7 @@ export function updateWorkers(s, dt) {
         w.phase = 'inside';
         w.rest = Math.max(
           1,
-          3 / (TYPES[b.type].rate * 1.3 ** ((b.level || 1) - 1)) -
+          3 / (baseRate(s, b) * 1.3 ** ((b.level || 1) - 1)) -
             (2 * (w.tripDistance || 0)) / 0.62 -
             2.2,
         );
@@ -300,31 +300,34 @@ export function produceOfflineWorkers(s, seconds) {
   if (seconds <= 0) return;
   for (const w of syncWorkers(s)) {
     const b = ownerOf(s, w);
-    let budget =
-      TYPES[b.type].rate * 1.3 ** ((b.level || 1) - 1) * seconds + (w.offlineRemainder || 0);
+    let budget = baseRate(s, b) * 1.3 ** ((b.level || 1) - 1) * seconds + (w.offlineRemainder || 0);
     w.offlineRemainder = budget % 1;
     if (s.adventure) {
-      const foodPerUnit =
-        MEAL_FOOD / (WORK_SECONDS * TYPES[b.type].rate * 1.3 ** ((b.level || 1) - 1));
+      const foodPerUnit = MEAL_FOOD / (WORK_SECONDS * baseRate(s, b) * 1.3 ** ((b.level || 1) - 1));
       const full = Math.min(budget, s.resources.food / foodPerUnit);
       budget = full + (budget - full) * 0.55;
     }
-    budget = Math.floor(budget);
+    budget = Math.floor(budget * (s.chapter?.perks?.tools ? 2 : 1));
     while (budget > 0) {
       const work = findWork({ ...s, workers: [] }, w);
       if (!work) break;
       const n = work.node,
         remaining = s.resourceState[n.id]?.hitsLeft ?? n.hits;
       const amount = Math.min(budget, remaining);
-      for (let i = 0; i < amount; i++)
-        harvestHit(s, { x: n.tileX, y: n.tileY, resourceId: n.id }, Date.now(), false);
-      s.resources[n.kind] += amount * n.yield;
+      let extracted = 0;
+      while (extracted < amount) {
+        const hit = harvestHit(s, { x: n.tileX, y: n.tileY, resourceId: n.id }, Date.now(), false);
+        if (!hit.ok) break;
+        extracted += hit.amount;
+      }
+      if (!extracted) break;
+      s.resources[n.kind] += extracted;
       if (s.adventure) {
         const foodPerUnit =
-          MEAL_FOOD / (WORK_SECONDS * TYPES[b.type].rate * 1.3 ** ((b.level || 1) - 1));
-        s.resources.food = Math.max(0, s.resources.food - amount * foodPerUnit);
+          MEAL_FOOD / (WORK_SECONDS * baseRate(s, b) * 1.3 ** ((b.level || 1) - 1));
+        s.resources.food = Math.max(0, s.resources.food - extracted * foodPerUnit);
       }
-      budget -= amount;
+      budget -= extracted;
     }
   }
 }

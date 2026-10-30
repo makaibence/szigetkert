@@ -53,7 +53,9 @@ export function workerEfficiency(s, w) {
 }
 export function supplySummary(s) {
   const e = ensureSupply(s),
-    workers = (s.workers || []).filter((w) => s.buildings.some((b) => b.id === w.buildingId));
+    workers = [...(s.workers || []), ...Object.values(s.production?.crews || {})].filter((w) =>
+      s.buildings.some((b) => b.id === w.buildingId),
+    );
   const working = workers.filter((w) =>
     ['outbound', 'working', 'returning', 'entering', 'emerging'].includes(w.phase),
   ).length;

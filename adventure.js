@@ -1,3 +1,11 @@
+import {
+  ensureChapter,
+  chapterSitesForNewGame,
+  chapterObjective,
+  siteRequirement,
+  validateChapter,
+  ensureMerchant,
+} from './chapter.js';
 import { fresh, TYPES, afford, validate as validateCore } from './engine.js';
 import { LOCATIONS, EARLY_SITES } from './island-layout.js';
 import { ensureSupply } from './supply.js';
@@ -5,13 +13,26 @@ import { findPath, walkable } from './navigation.js';
 import { terrain, key, SIZE, regionUnlocked } from './world.js';
 
 const clone = (v) => JSON.parse(JSON.stringify(v));
+export const BASE_STARTER_SUPPLIES = Object.freeze({ wood: 30, stone: 18, food: 12 });
+export function pendingBaseWelcome(s) {
+  const site = s.adventure?.sites.find(
+    (p) => p.baseWelcomePending && p.cacheClaimed && p.type === 'hut',
+  );
+  return site ? { siteId: site.id, reward: { ...site.baseWelcomeReward } } : null;
+}
+export function acknowledgeBaseWelcome(s, id) {
+  const p = siteById(s, id);
+  if (!p?.baseWelcomePending) return false;
+  p.baseWelcomePending = false;
+  return true;
+}
 export function freshAdventure(now = Date.now(), seed) {
   const s = fresh(now);
   Object.assign(s, {
-    worldVersion: 3,
+    worldVersion: 4,
     buildings: [],
     workers: [],
-    nextBuildingId: 106,
+    nextBuildingId: 206,
     resources: { wood: 0, stone: 0, food: 0, gold: 0 },
     hero: { x: 2, y: 10, angle: 0, direction: 'se' },
     revealed: [],
@@ -21,11 +42,7 @@ export function freshAdventure(now = Date.now(), seed) {
     kind: 'story',
     seed: seed ?? (globalThis.crypto?.getRandomValues(new Uint32Array(1))[0] || Date.now() >>> 0),
     introSeen: false,
-    sites: [...LOCATIONS, ...EARLY_SITES].map((p) => ({
-      ...clone(p),
-      restored: false,
-      inspected: false,
-    })),
+    sites: chapterSitesForNewGame(),
     items: {},
     decisions: [],
     eventsSeen: [],
@@ -129,14 +146,32 @@ export function upgradeCampaign(s) {
   a.nextForageAt ??= 0;
   a.tutorialSeen ??= false;
   if (a.pending && !a.pending.target) assignEventTarget(s);
+  ensureChapter(s);
   return s;
 }
-export function switchCampaign(s) {
-  const current = clone(s);
-  delete current.archive;
-  const next = s.archive ? prepareCampaign(clone(s.archive)) : freshAdventure();
-  delete next.archive;
-  next.archive = current;
+function stripIslands(s) {
+  const c = clone(s);
+  delete c.archive;
+  delete c.otherIslands;
+  return c;
+}
+export function startFreshAdventure(s) {
+  const next = freshAdventure();
+  next.archive = stripIslands(s);
+  next.otherIslands = [
+    ...(s.archive ? [stripIslands(s.archive)] : []),
+    ...(s.otherIslands || []).map(stripIslands),
+  ];
+  return next;
+}
+export function switchCampaign(s, index = 0) {
+  const saved = [...(s.archive ? [s.archive] : []), ...(s.otherIslands || [])];
+  if (!saved.length) return startFreshAdventure(s);
+  if (!Number.isInteger(index) || index < 0 || index >= saved.length)
+    throw Error('Ismeretlen megőrzött sziget.');
+  const next = prepareCampaign(stripIslands(saved[index]));
+  next.archive = stripIslands(s);
+  next.otherIslands = saved.filter((_, i) => i !== index).map(stripIslands);
   return next;
 }
 export function knownSite(s, p) {
@@ -155,6 +190,7 @@ export function discoverSites(s) {
   return found;
 }
 export function objective(s) {
+  if (s.chapter) return chapterObjective(s);
   if (!restoredType(s, 'hut')) return 'Keress menedéket a part mentén induló ösvényen.';
   if (!restoredType(s, 'farm'))
     return 'A készletek végesek. Keress tartós élelemforrást a sziget ezen részén.';
@@ -170,13 +206,23 @@ export function inspectSite(s, id) {
   p.inspected = true;
   if (p.type === 'hut' && !p.cacheClaimed) {
     p.cacheClaimed = true;
-    s.resources.wood += 30;
-    s.resources.stone += 18;
-    s.resources.food += 30;
+    p.baseWelcomePending = true;
+    p.baseWelcomeReward = { ...BASE_STARTER_SUPPLIES };
+    for (const [kind, amount] of Object.entries(p.baseWelcomeReward)) s.resources[kind] += amount;
     return {
       ok: true,
-      text: 'A házban használható készlet maradt: +30 fa, +18 kő, +30 élelem. Ez egyszeri tartalék, a bázis nem termel.',
+      text: 'A házban használható készlet maradt: +30 fa, +18 kő, +12 élelem. Ez egyszeri tartalék, a bázis nem termel.',
     };
+  }
+  if (p.kind === 'ore') {
+    if (!siteRequirement(s, p))
+      return { ok: true, text: 'A kőfaragó segítségével fejthető ez a kemény ér.' };
+    p.oreLeft ??= 72;
+    if (p.oreLeft <= 0) return { ok: true, text: 'Ez az ér most kimerült.' };
+    const amount = Math.min(4, p.oreLeft);
+    p.oreLeft -= amount;
+    s.resources.ironOre += amount;
+    return { ok: true, text: `Vasércet fejtettél a sziklából: +${amount} vasérc.` };
   }
   if (p.kind === 'forage') {
     const wait = (s.adventure.nextForageAt || 0) - (s.adventure.playTime || 0);
@@ -237,11 +283,10 @@ export function restoration(s, id) {
   const p = siteById(s, id);
   if (!p || p.restored || !p.cost || !p.inspected || !knownSite(s, p))
     return { ok: false, reason: 'Előbb vizsgáld meg a helyszínt.' };
-  if (
-    p.requires &&
-    !s.adventure.sites.some((q) => (q.id === p.requires || q.type === p.requires) && q.restored)
-  )
-    return { ok: false, reason: 'Előbb működő favágótelepre van szükség.' };
+  if (!siteRequirement(s, p))
+    return { ok: false, reason: 'Előbb a kapcsolódó helyszínt kell helyreállítanod.' };
+  if (p.order)
+    return { ok: false, reason: 'A ház a helyszíni megrendelés teljesítésével állítható helyre.' };
   if (!afford(s, siteCost(s, p))) return { ok: false, reason: 'Még hiányzik néhány nyersanyag.' };
   if (Math.hypot(s.hero.x - p.x, s.hero.y - p.y) > 1.8)
     return { ok: false, reason: 'Menj közelebb a helyszínhez.' };
@@ -260,6 +305,7 @@ export function restoreSite(s, id) {
   }
   if (p.kind === 'bridge' && !s.unlocked.includes('main')) s.unlocked.push('main');
   s.adventure.decisions.push('restore:' + p.id);
+  ensureMerchant(s);
   return true;
 }
 function random(s) {
@@ -356,9 +402,12 @@ export function inspectDiscovery(s) {
     const wood = 5 * multiplier,
       gold = 3 * multiplier;
     s.resources.wood += wood;
-    s.resources.gold += gold;
+    if (s.chapter) s.resources.silver += 2;
+    else s.resources.gold += gold;
     s.adventure.items.seal = 1;
-    text = `Kinyitottad a partra sodródott csomagot: +${wood} fa, +${gold} arany. A jelzését megőrizted.`;
+    text = s.chapter
+      ? `Kinyitottad a partra sodródott csomagot: +${wood} fa, +2 ezüst.`
+      : `Kinyitottad a partra sodródott csomagot: +${wood} fa, +${gold} arany. A jelzését megőrizted.`;
   }
   s.adventure.eventsSeen.push(p.type + ':' + p.id);
   s.adventure.decisions.push('found:' + p.type);
@@ -375,8 +424,8 @@ export function maybeEvent(s) {
   if (s.explored < a.nextEventAt || !a.introSeen) return false;
   if (!restoredType(s, 'hut')) return false;
   const pool = ['traces', 'tide'];
-  if (restoredType(s, 'lumber')) pool.push('request', 'visitor');
-  if (a.decisions.includes('welcomed-trader')) pool.push('visitor');
+  if (restoredType(s, 'lumber') && !s.chapter) pool.push('request', 'visitor');
+  if (a.decisions.includes('welcomed-trader') && !s.chapter) pool.push('visitor');
   const recent = a.eventsSeen.slice(-2).map((v) => v.split(':')[0]),
     eligible = pool.filter((t) => !recent.includes(t));
   const type = (eligible.length ? eligible : pool)[
@@ -479,7 +528,7 @@ export function validateCampaign(s, depth = 0) {
       p.y < 0 ||
       p.x >= SIZE ||
       p.y >= SIZE ||
-      !['wreck', 'building', 'bridge', 'marker', 'forage'].includes(p.kind) ||
+      !['wreck', 'building', 'bridge', 'marker', 'forage', 'ore'].includes(p.kind) ||
       typeof p.restored !== 'boolean' ||
       typeof p.inspected !== 'boolean'
     )
@@ -499,16 +548,36 @@ export function validateCampaign(s, depth = 0) {
       )
     )
       throw Error('Hiányzó helyreállított épület.');
+    if (
+      p.baseWelcomePending != null &&
+      (typeof p.baseWelcomePending !== 'boolean' || p.type !== 'hut' || !p.cacheClaimed)
+    )
+      throw Error('Hibás báziskártya.');
+    if (
+      p.baseWelcomeReward &&
+      (p.type !== 'hut' ||
+        !['wood', 'stone', 'food'].every(
+          (k) =>
+            Number.isInteger(p.baseWelcomeReward[k]) &&
+            p.baseWelcomeReward[k] >= 0 &&
+            p.baseWelcomeReward[k] <= 100000,
+        ) ||
+        Object.keys(p.baseWelcomeReward).length !== 3)
+    )
+      throw Error('Hibás báziskészlet.');
+    if (p.baseWelcomePending && !p.baseWelcomeReward) throw Error('Hiányzó báziskészlet.');
+    if (
+      p.kind === 'ore' &&
+      p.oreLeft != null &&
+      (!Number.isInteger(p.oreLeft) || p.oreLeft < 0 || p.oreLeft > 72)
+    )
+      throw Error('Hibás érckészlet.');
     ids.add(p.id);
     if (p.type && !Object.hasOwn(TYPES, p.type)) throw Error('Hibás helyszíntípus.');
     if (
       p.cost &&
       !Object.entries(p.cost).every(
-        ([k, v]) =>
-          ['wood', 'stone', 'food', 'gold'].includes(k) &&
-          Number.isFinite(v) &&
-          v >= 0 &&
-          v <= 100000,
+        ([k, v]) => Object.hasOwn(s.resources, k) && Number.isFinite(v) && v >= 0 && v <= 100000,
       )
     )
       throw Error('Hibás javítási költség.');
@@ -606,6 +675,23 @@ export function validateCampaign(s, depth = 0) {
       a.lastDiscovery.text.length > 600)
   )
     throw Error('Hibás felfedezési eredmény.');
+  if (
+    s.hero.siteWork &&
+    (!s.adventure.sites.some((p) => p.id === s.hero.siteWork.siteId && p.kind === 'ore') ||
+      !Number.isFinite(s.hero.siteWork.remaining) ||
+      s.hero.siteWork.remaining < 0 ||
+      s.hero.siteWork.remaining > 1.2 ||
+      !Number.isFinite(s.hero.siteWork.elapsed) ||
+      s.hero.siteWork.elapsed < 0 ||
+      s.hero.siteWork.elapsed > 1.2)
+  )
+    throw Error('Hibás ércfejtési állapot.');
+  validateChapter(s);
+  if (s.otherIslands) {
+    if (depth || !Array.isArray(s.otherIslands) || s.otherIslands.length > 20)
+      throw Error('Hibás szigetarchívum.');
+    for (const island of s.otherIslands) validateCampaign(island, 1);
+  }
   if (s.archive) {
     if (depth) throw Error('Túl mély mentési archívum.');
     validateCampaign(s.archive, 1);

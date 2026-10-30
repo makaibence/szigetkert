@@ -13,6 +13,8 @@ export function loadGame(storage = localStorage) {
       storage.setItem('szigetkert.backup.pre-adventure', raw);
     if (parsed.version <= 4 && !storage.getItem('szigetkert.backup.pre-supply-v5'))
       storage.setItem('szigetkert.backup.pre-supply-v5', raw);
+    if (parsed.version <= 5 && !storage.getItem('szigetkert.backup.pre-chapter-v6'))
+      storage.setItem('szigetkert.backup.pre-chapter-v6', raw);
     return { state: validateCampaign(parsed), writable: true };
   } catch (error) {
     return { state: freshAdventure(), writable: false, error };

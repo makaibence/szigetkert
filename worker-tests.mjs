@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { fresh, build, move, upgrade, upgradeCost, validate, tick, CAP } from './engine.js';
 import { syncWorkers, updateWorkers, produceOfflineWorkers, findWork } from './workers.js';
 const s = fresh();
-s.resources = { wood: 1000, stone: 1000, food: 1000, gold: 1000 };
+s.resources = { ...s.resources, wood: 1000, stone: 1000, food: 1000, gold: 1000 };
 assert.ok(build(s, 'lumber', 5, 4));
 syncWorkers(s);
 const worker = s.workers[0],
@@ -66,7 +66,7 @@ const legacy = structuredClone(s);
 legacy.version = 2;
 delete legacy.workers;
 const migrated = validate(legacy);
-assert.equal(migrated.version, 5);
+assert.equal(migrated.version, 6);
 assert.deepEqual(migrated.workers, []);
 console.log(
   'PASS: valódi munkáskör, visszahozott készlet, mentett rakomány, akadályozott termelés, véges távolléti kitermelés, 3 fejlesztési szint, 1–3 munkás, áthelyezéskor megőrzött azonosító és szint, v2→v5 migráció.',

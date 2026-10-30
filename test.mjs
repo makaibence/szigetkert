@@ -8,5 +8,8 @@ for (const test of [
   'worker-tests.mjs',
   'adventure-tests.mjs',
   'supply-tests.mjs',
+  'base-welcome-tests.mjs',
+  'chapter-tests.mjs',
+  'chapter-flow-tests.mjs',
 ])
   await import('./' + test);
