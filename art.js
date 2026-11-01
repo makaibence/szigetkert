@@ -1,4 +1,4 @@
-export const ART_VERSION = 'painted-adventure-2';
+export const ART_VERSION = 'painted-adventure-4';
 export function validateArtManifest(manifest) {
   for (const [name, count] of Object.entries({
     village: 9,
@@ -7,6 +7,9 @@ export function validateArtManifest(manifest) {
     expedition: 9,
     workshops: 9,
     items: 9,
+    voyage: 9,
+    closedDock: 1,
+    beacon: 2,
   })) {
     const atlas = manifest?.[name];
     if (
@@ -35,15 +38,19 @@ export async function loadArt() {
       i.onerror = () => reject(Error('Nem tölthető be: ' + src));
       i.src = src;
     });
-  const [village, nature, meadow, props, expedition, workshops, items] = await Promise.all([
-    load(manifest.village.src),
-    load(manifest.nature.src),
-    load('./assets/terrain-v08.png'),
-    load(manifest.props.src),
-    load(manifest.expedition.src),
-    load(manifest.workshops.src),
-    load(manifest.items.src),
-  ]);
+  const [village, nature, meadow, props, expedition, workshops, items, voyage, closedDock, beacon] =
+    await Promise.all([
+      load(manifest.village.src),
+      load(manifest.nature.src),
+      load('./assets/terrain-v08.png'),
+      load(manifest.props.src),
+      load(manifest.expedition.src),
+      load(manifest.workshops.src),
+      load(manifest.items.src),
+      load(manifest.voyage.src),
+      load(manifest.closedDock.src),
+      load(manifest.beacon.src),
+    ]);
   const pixels = {};
   for (const [name, img] of Object.entries({
     village,
@@ -52,6 +59,9 @@ export async function loadArt() {
     expedition,
     workshops,
     items,
+    voyage,
+    closedDock,
+    beacon,
   })) {
     const c = document.createElement('canvas');
     c.width = img.naturalWidth;
@@ -62,8 +72,28 @@ export async function loadArt() {
   }
   const frameImages = {},
     framePixels = {};
-  for (const name of ['village', 'nature', 'props', 'expedition', 'workshops', 'items']) {
-    const source = { village, nature, props, expedition, workshops, items }[name];
+  for (const name of [
+    'village',
+    'nature',
+    'props',
+    'expedition',
+    'workshops',
+    'items',
+    'voyage',
+    'closedDock',
+    'beacon',
+  ]) {
+    const source = {
+      village,
+      nature,
+      props,
+      expedition,
+      workshops,
+      items,
+      voyage,
+      closedDock,
+      beacon,
+    }[name];
     frameImages[name] = [];
     framePixels[name] = [];
     for (const [index, frame] of manifest[name].frames.entries()) {
@@ -119,6 +149,9 @@ export async function loadArt() {
     expedition,
     workshops,
     items,
+    voyage,
+    closedDock,
+    beacon,
     materials,
     frameImages,
     framePixels,

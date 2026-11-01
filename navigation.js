@@ -15,6 +15,16 @@ export function canStand(s, x, y) {
   )
     return false;
   if (s.buildings.some((b) => Math.abs(b.x - x) < 0.49 && Math.abs(b.y - y) < 0.49)) return false;
+  if (
+    s.adventure?.sites.some(
+      (p) =>
+        p.kind === 'landmark' &&
+        !['note', 'landing'].includes(p.voyageRole) &&
+        Math.abs(p.x - x) < 0.4 &&
+        Math.abs(p.y - y) < 0.4,
+    )
+  )
+    return false;
   for (let a = cx - 1; a <= cx + 1; a++)
     for (let b = cy - 1; b <= cy + 1; b++)
       for (const node of liveResources(s, a, b))
@@ -31,6 +41,13 @@ export function walkable(s, x, y) {
     regionUnlocked(s, x, y) &&
     (!s.onlyRevealed || s.revealed.includes(key(x, y))) &&
     !s.buildings.some((b) => b.x === x && b.y === y) &&
+    !s.adventure?.sites.some(
+      (p) =>
+        p.kind === 'landmark' &&
+        !['note', 'landing'].includes(p.voyageRole) &&
+        p.x === x &&
+        p.y === y,
+    ) &&
     !(s.adventure?.trader?.active && s.adventure.trader.x === x && s.adventure.trader.y === y)
   );
 }

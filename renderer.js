@@ -1,3 +1,6 @@
+import { voyageArt } from './voyage-present.js';
+import { VOYAGE_TRAIL, ECHO_TRAILS } from './voyage-content.js';
+import { voyageReady, projectDone } from './voyage.js';
 import { CHAPTER_TRAILS, RECIPES } from './content.js';
 import { buildingLabel } from './world-ui.js';
 import { productionProgress, craftEstimate, durationText } from './production.js';
@@ -39,7 +42,9 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
   let interactive = [],
     lastFrame = 0,
     frameCount = 0,
-    fpsTime = 0;
+    fpsTime = 0,
+    gatePreviouslyOpen = null,
+    gateOpenedAt = -10000;
   const fog = document.createElement('canvas');
   fog.width = fog.height = TEX;
   const cloud = document.createElement('canvas');
@@ -173,6 +178,8 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
               [parent.x, parent.y + 0.4],
             ];
           });
+    if (s.worldVersion === 5) lines = ECHO_TRAILS;
+    else if (s.voyage?.diaryRead && s.worldVersion === 4) lines = [...lines, ...VOYAGE_TRAIL];
     const pattern = ctx.createPattern(art.materials.dirt, 'repeat');
     pattern.setTransform(new DOMMatrix().scale(0.0035));
     for (const line of lines) {
@@ -227,8 +234,10 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
     ctx.fillStyle = '#1d2a35';
     ctx.fillRect(0, 0, width, height);
     if (!ready) return;
-    const s = getState(),
-      selected = getSelected(),
+    const s = getState();
+    if (gatePreviouslyOpen === false && s.voyage?.gateOpen) gateOpenedAt = now;
+    gatePreviouslyOpen = !!s.voyage?.gateOpen;
+    const selected = getSelected(),
       focus = camera.focus || s.hero;
     if (surface.worldVersion !== s.worldVersion) {
       surface = new TerrainSurface(art.materials, s.worldVersion);
@@ -305,7 +314,7 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
               ctx.beginPath();
               ctx.ellipse(base.x + unit * 0.1, base.y, unit * 0.56, unit * 0.18, 0, 0, 7);
               ctx.fill();
-              const ba = buildingArt(building.type, building.level);
+              const ba = voyageArt(s, building) || buildingArt(building.type, building.level);
               sprite(ba.atlas, ba.index, base, unit * 1.42, {
                 x,
                 y,
@@ -484,9 +493,72 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
       if (
         !siteVisible(s, site) ||
         !known.has(key(site.x, site.y)) ||
-        (site.kind === 'building' && site.restored)
+        (site.kind === 'building' && site.restored) ||
+        (site.kind === 'wreck' && s.voyage?.harbourSeen)
       )
         continue;
+      const special = voyageArt(s, site);
+      if (site.voyageRole && special) {
+        const p = pos(site.x + (special.dx || 0), site.y + (special.dy || 0));
+        if (!visible(p)) continue;
+        objects.push({
+          depth: p.y,
+          draw: () => {
+            const job = s.voyage?.job?.site === site.id && s.voyage.job,
+              afloat =
+                site.voyageRole === 'landing' ||
+                (site.voyageRole === 'boat' && projectDone(s, 'boat-rigging')),
+              lift =
+                site.voyageRole === 'boat' && job
+                  ? Math.sin(Math.PI * (1 - job.remaining / job.total)) * unit * 0.17
+                  : afloat
+                    ? Math.sin(now / 700) * unit * 0.018
+                    : 0;
+            if (lift && job) {
+              const h = pos(8.4, 15);
+              ctx.strokeStyle = '#8a714b';
+              ctx.lineWidth = 1.4;
+              ctx.beginPath();
+              ctx.moveTo(h.x, h.y - unit * 0.9);
+              ctx.lineTo(p.x, p.y - lift - unit * 0.3);
+              ctx.stroke();
+            }
+            const gateBlend =
+              site.voyageRole === 'harbour' && s.voyage.gateOpen
+                ? Math.min(1, (now - gateOpenedAt) / 1100)
+                : 1;
+            if (gateBlend < 1) sprite('closedDock', 0, p, unit * (special.scale || 1.4));
+            ctx.save();
+            ctx.globalAlpha = gateBlend;
+            sprite(
+              special.atlas,
+              special.index,
+              { x: p.x, y: p.y - lift },
+              unit * (special.scale || 1.4),
+              { x: site.x, y: site.y, siteId: site.id },
+            );
+            ctx.restore();
+            if (site.voyageRole === 'beacon' && s.voyage.beaconLit) {
+              ctx.save();
+              ctx.globalCompositeOperation = 'screen';
+              const glow = ctx.createRadialGradient(
+                p.x,
+                p.y - unit * 1.15,
+                1,
+                p.x,
+                p.y - unit * 1.15,
+                unit * 0.4,
+              );
+              glow.addColorStop(0, '#fff4b8cc');
+              glow.addColorStop(1, '#ffe8a000');
+              ctx.fillStyle = glow;
+              ctx.fillRect(p.x - unit * 0.6, p.y - unit * 1.7, unit * 1.2, unit * 1.2);
+              ctx.restore();
+            }
+          },
+        });
+        continue;
+      }
       const p =
         site.kind === 'wreck' && s.worldVersion >= 2
           ? pos(site.x - 1.7, site.y + 0.15)
@@ -547,7 +619,7 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
           ),
       });
     }
-    if (s.adventure?.trader?.active) {
+    if (s.adventure?.trader?.active && !s.adventure.trader.chapterMerchant) {
       const t = s.adventure.trader,
         p = pos(t.x, t.y);
       if (known.has(key(t.x, t.y)) && visible(p)) {
@@ -565,8 +637,9 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
     }
     if (s.adventure?.trader?.active) {
       const t = s.adventure.trader,
-        p = pos(t.x + 0.45, t.y + 0.15);
-      if (known.has(key(t.x, t.y)) && visible(p))
+        yard = t.chapterMerchant && s.adventure.sites.find((p) => p.id === 'tradepost'),
+        p = yard ? pos(yard.x - 0.4, yard.y + 0.7) : pos(t.x + 0.45, t.y + 0.15);
+      if (known.has(key(yard?.x ?? t.x, yard?.y ?? t.y)) && visible(p))
         objects.push({
           depth: p.y,
           draw: () => {
@@ -574,13 +647,23 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
             avatar.setResolution(size * dpr);
             avatar.draw({ angle: -0.65, action: 'idle' }, now / 1000, 'merchant');
             ctx.drawImage(avatar.canvas, p.x - size / 2, p.y - size * 0.775, size, size);
+            interactive.push({
+              left: p.x - size * 0.2,
+              top: p.y - size * 0.72,
+              w: size * 0.4,
+              h: size * 0.72,
+              tile: yard
+                ? { siteId: yard.id, x: yard.x, y: yard.y }
+                : { event: true, x: t.x, y: t.y },
+            });
           },
         });
     }
     const residence = s.adventure?.sites.find(
       (p) =>
         p.id ===
-        (carpenterWaiting(s) ||
+        (s.voyage?.job?.site === 'camp' ||
+        carpenterWaiting(s) ||
         (s.chapter?.carpenterIntro && !s.chapter.completedOrders.includes('house-repair'))
           ? 'camp'
           : 'house'),
@@ -597,8 +680,26 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
           draw: () => {
             const size = unit * 0.86;
             avatar.setResolution(size * dpr);
-            avatar.draw({ angle: -0.65, action: 'idle' }, now / 1000, 'carpenter');
+            avatar.draw(
+              {
+                angle: -0.65,
+                action: s.voyage?.job?.site === 'camp' ? 'craft' : 'idle',
+                workTime: now / 1000,
+              },
+              now / 1000,
+              'carpenter',
+            );
             ctx.drawImage(avatar.canvas, p.x - size / 2, p.y - size * 0.775, size, size);
+            ctx.save();
+            ctx.fillStyle = '#29485ae8';
+            ctx.beginPath();
+            ctx.roundRect(p.x - 20, p.y - size * 0.78 - 15, 40, 18, 6);
+            ctx.fill();
+            ctx.fillStyle = '#fff0c6';
+            ctx.font = '600 11px system-ui';
+            ctx.textAlign = 'center';
+            ctx.fillText('Ács', p.x, p.y - size * 0.78 - 2);
+            ctx.restore();
             interactive.push({
               left: p.x - size * 0.18,
               top: p.y - size * 0.65,
@@ -608,6 +709,45 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
             });
           },
         });
+    }
+    for (const [role, id] of [
+      ['shipwright', 'harbour'],
+      ['keeper', 'echo-home'],
+    ]) {
+      const site = s.adventure?.sites.find((p) => p.id === id),
+        shown = role === 'shipwright' ? s.voyage?.shipwrightMet : s.voyage?.keeperMet;
+      if (!site || !shown || !known.has(key(site.x, site.y))) continue;
+      const workingAtBoat = role === 'shipwright' && s.voyage?.job?.site === 'drydock';
+      const p =
+        role === 'shipwright'
+          ? pos(workingAtBoat ? 9.6 : 8.7, workingAtBoat ? 14.3 : 14.2)
+          : pos(site.x - 0.75, site.y - 0.5);
+      if (!visible(p)) continue;
+      objects.push({
+        depth: p.y + 0.02,
+        draw: () => {
+          const size = unit * 0.9,
+            working =
+              !!s.voyage?.job &&
+              (role === 'shipwright'
+                ? ['harbour', 'drydock'].includes(s.voyage.job.site)
+                : s.voyage.job.site === id);
+          avatar.setResolution(size * dpr);
+          avatar.draw(
+            { angle: -0.65, action: working ? 'craft' : 'idle', workTime: now / 1000 },
+            now / 1000,
+            role,
+          );
+          ctx.drawImage(avatar.canvas, p.x - size / 2, p.y - size * 0.775, size, size);
+          interactive.push({
+            left: p.x - size * 0.2,
+            top: p.y - size * 0.72,
+            w: size * 0.4,
+            h: size * 0.72,
+            tile: { siteId: id, x: site.x, y: site.y },
+          });
+        },
+      });
     }
     objects.sort((a, b) => a.depth - b.depth);
     for (const o of objects) o.draw();
@@ -632,7 +772,7 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
       if (!known.has(key(b.x, b.y))) continue;
       const p = pos(b.x, b.y),
         progress = productionProgress(s, b),
-        ba = buildingArt(b.type, b.level || 1),
+        ba = voyageArt(s, b) || buildingArt(b.type, b.level || 1),
         f = art.manifest[ba.atlas].frames[ba.index];
       if (p.x < 0 || p.x > width || p.y < 0 || p.y > height + unit * 1.5) continue;
       const box = buildingLabel(p, unit, f[3] / f[2], !!progress),
@@ -686,7 +826,9 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
       } else {
         const caption =
           b.type === 'hut'
-            ? 'Bázis'
+            ? voyageReady(s)
+              ? `Otthon · ${s.voyage.homeLevel}. szint${ready ? ' ↑' : ''}`
+              : 'Bázis'
             : b.type === 'residence'
               ? 'Ács otthona'
               : b.type === 'tradepost'
@@ -704,6 +846,39 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
         h,
         tile: { x: b.x, y: b.y, siteId: site?.id, buildingId: b.id, badge: true },
       });
+    }
+    if (s.voyage?.job) {
+      const j = s.voyage.job,
+        site = s.adventure.sites.find((p) => p.id === j.site);
+      if (site && known.has(key(site.x, site.y))) {
+        const p = pos(site.x, site.y),
+          a = voyageArt(s, site) || { atlas: 'village', index: 0 },
+          f = art.manifest[a.atlas].frames[a.index],
+          w = 144,
+          h = 39,
+          left = p.x - w / 2,
+          top = p.y - (unit * (a.scale || 1.42) * f[3]) / f[2] - h - 10;
+        if (visible(p)) {
+          ctx.fillStyle = '#264344ee';
+          ctx.beginPath();
+          ctx.roundRect(left, top, w, h, 7);
+          ctx.fill();
+          ctx.fillStyle = '#fff2ce';
+          ctx.font = '600 11px system-ui';
+          ctx.textAlign = 'center';
+          ctx.fillText('Javítás · kb. ' + durationText(j.remaining), p.x, top + 15, w - 12);
+          ctx.fillStyle = '#a3c96a';
+          ctx.fillRect(left + 8, top + 25, (w - 16) * (1 - j.remaining / j.total), 5);
+          ctx.textAlign = 'left';
+          interactive.push({
+            left,
+            top,
+            w,
+            h,
+            tile: { siteId: site.id, x: site.x, y: site.y, badge: true },
+          });
+        }
+      }
     }
     for (const site of s.adventure?.sites || []) {
       const ready = siteReadiness(s, site);
@@ -868,20 +1043,20 @@ export function createRenderer(canvas, getState, getSelected, camera, options = 
         if (gains.length > 32) gains.shift();
       }
     },
-    thumbnail(atlas, index) {
+    thumbnail(atlas, index, size = 80) {
       if (!ready) return null;
-      const key = atlas + index;
+      const key = atlas + index + ':' + size;
       if (!thumbnails.has(key)) {
         const source = art.frameImages[atlas]?.[index];
         if (!source) return null;
         const c = document.createElement('canvas');
-        c.width = c.height = 80;
+        c.width = c.height = Math.min(320, Math.max(40, size));
         const cx = c.getContext('2d'),
-          scale = Math.min(76 / source.width, 76 / source.height);
+          scale = Math.min((c.width - 4) / source.width, (c.height - 4) / source.height);
         cx.drawImage(
           source,
-          (80 - source.width * scale) / 2,
-          (80 - source.height * scale) / 2,
+          (c.width - source.width * scale) / 2,
+          (c.height - source.height * scale) / 2,
           source.width * scale,
           source.height * scale,
         );

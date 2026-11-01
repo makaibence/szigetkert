@@ -88,3 +88,49 @@ Az épületek feletti kompakt jelzőben hátralévő idő is szerepel;
 a gyűjtési +szám és anyagikon valódi jóváírásból készül, csak megjelenítés.
 A kereskedő és szekere közelebb került a kereskedőudvarhoz; a házak mentett
 helye nem változott. A régi, nem fejleszthető helyek fölött szerepük neve látszik.
+
+
+0.13.1 – KARAKTEREK MEGKÜLÖNBÖZTETÉSE
+Új kép vagy karaktermodell nem készült. Az ács a meglévő csontozott modellen
+külön kék felsőt és őszes hajat kap, kis Ács jelzéssel. A szerepkörök
+palettája külön avatar-style.js fájlban van. A fejezet kereskedője a saját
+udvara mellett áll; külön szekér nem jelenik meg. A régi szigetek vándor-
+kereskedőinek képe a korábbi mentésekhez megmarad.
+
+
+0.14 – OTTHON, KIKÖTŐ, SAJÁT HAJÓ ÉS PARTI JELZŐ
+Készítés: a beépített image_gen eszköz, nem külső API/CLI.
+A régi világ és a valódi, animált 3D karakterek megmaradtak.
+
+Új fájlok a projektben:
+assets/sailing-v14-spaced.png – kilenc részletes, átlátszó állapotkép.
+assets/sailing-v14-dock.png – a korábbi atlasz zárt, helyreállított kikötője.
+assets/beacon-v14.png – ugyanannak a parti jelzőnek sérült és javított képe.
+assets/frames.json – képkockahatárok és futásidejű kivágási maszkok.
+A generált PNG-k bájtszinten változatlan másolatok. A maszkok csak az atlasz
+szomszédos objektumait választják külön a játék megjelenítésekor.
+A kilenc képes atlasz nem tartotta pontosan a kért cellaméreteket; ezért a
+valós tárgyhatárokból készült metaadat, nem feltételezett 512-es négyzetrács.
+
+A kikötőhöz külön zárt és nyitott kapus állapot tartozik. A váltás rövid
+átmenet, nem külön csontozott kapumodell. A vízen lévő hajó finoman ring;
+a javításnál a meglévő 3D hajóács és a helyszínhez kötött munkajelzés látszik.
+A ház külső állapotai: régi kunyhó, javított kőház, tornácos otthon, udvaros
+otthon. A belső padlójavításnak nincs külön külső képváltozata.
+A négy hajójavítási munkalépéshez három fő hajóállapot tartozik.
+Ez részletes sprite-világ (állapotképek), animált 3D szereplőkkel; a házak és
+a hajó nem szabadon körbejárható 3D modellek.
+
+Eredet és felhasznált generálási utasítások:
+Az első, 1536×1024-es atlasz a három házfejlődési állapotot, két kikötőállapotot,
+a roncsot, két helyreállított hajóállapotot és az öbölőr házát kérte, egységes
+festett izometrikus stílusban. A zárt kikötő ebből az első változatból származik.
+A pontos első teljes prompt nincs ebben a jegyzetben visszaidézve; az alábbi
+két végleges továbbfejlesztési prompt szó szerint szerepel.
+
+Végleges kilencképes atlasz promptja (a korábbi atlasz volt az edit target,
+vagyis a módosítandó képi bemenet; transparent_background=true):
+Edit the supplied game sprite atlas. Preserve the detailed warm painterly isometric style, materials, stone/wood, turquoise doors, orange roofs and exact nine subjects in the same 3 by 3 order. IMPORTANT LAYOUT FIX: produce a square 1536 by 1536 atlas with exactly nine square 512 by 512 cells. Every individual object must fit entirely within its own cell with 30 pixels transparent padding on ALL sides. No object or shadow may cross a cell boundary. Row1: three stages of restored cottage, from simple to porch to courtyard. Row2: ruined dock with crane and gate CLOSED; restored dock with crane and the wooden gate visibly RAISED high up between its masonry posts with an OPEN gap below; broken salvaged boat on repair supports. Row3: restored boat with bare mast and furled sail; completed cream sail boat; keeper cottage with short beacon tower. Keep all objects isolated on real alpha transparency, no brown/colored background, no ground rectangle, no sea, no text/numbers, no tile borders, no people. Center each full sprite inside its 512px cell with ample clear spacing. The tall boats must be scaled down to fit completely in their cells rather than invading row2. The center dock must have its front wooden gate lifted/open. Crisp professional game sprite art.
+
+Parti jelző promptja (az előző atlasz stílusreferencia; transparent_background=true):
+Create a game-ready two-frame horizontal sprite atlas matching the supplied detailed warm painterly isometric island-game artwork. Exactly TWO isolated versions of the SAME small freestanding coastal navigation beacon, not a house. Left half: damaged short cylindrical cream limestone beacon tower on a modest mossy stone foundation, weathered timber ladder, bent empty turquoise metal lantern cage with glass broken, unlit. Right half: identical shape and perspective but repaired wooden ladder, intact turquoise glazed lantern cage emitting a small warm amber light. Detailed stone and timber materials, subtle moss and a few white coastal flowers, warm sunlight from upper left, crisp 3/4 isometric view. Low compact tower, about a person's height and a half, simple and attractive. Same scale and identical foot anchor in both frames. No people, no houses, no scenery, no sea or terrain rectangle, no text, no UI. True alpha transparent background. Generous transparent gap separating the TWO objects and padding on all sides. Two aligned halves side by side.

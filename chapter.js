@@ -1,3 +1,4 @@
+import { voyageTask } from './voyage.js';
 import { CHAPTER_SITES, STORY_ORDERS, REPEAT_ORDERS, SHOP, RECIPES, EXTRA_RES } from './content.js';
 import { terrain, key } from './world.js';
 import { canPay, payMaterials, ensureProduction } from './production.js';
@@ -317,6 +318,8 @@ export function validateChapter(s) {
 
 /** Exactly one player-facing task; background encounters remain saved, without competing prompts. */
 export function currentTask(s) {
+  const next = voyageTask(s);
+  if (next) return next;
   const site = (id) => s.adventure.sites.find((p) => p.id === id),
     done = (id) => site(id)?.restored,
     make = (title, text, target, needs, benefit) => ({ title, text, target, needs, benefit });

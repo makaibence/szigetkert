@@ -1,3 +1,4 @@
+import { VOYAGE_TRAIL, ECHO_SITES, ECHO_TRAILS } from './voyage-content.js';
 import { authoredTerrain } from './island-layout.js';
 /** Stable world coordinates and resource identities. Artwork never owns save data. */
 export const SIZE = 41;
@@ -88,11 +89,12 @@ export function liveResources(s, x, y) {
     (r) =>
       !s.resourceState?.[r.id]?.cleared &&
       !arrivalBeach(s, r.x, r.y) &&
+      !(s.voyage?.diaryRead && s.worldVersion === 4 && voyagePathDistance(r.x, r.y) < 0.85) &&
       !(
         s.chapter &&
         (s.adventure?.sites.some(
           (p) =>
-            p.kind === 'building' &&
+            (p.kind === 'building' || p.kind === 'landmark') &&
             Math.hypot(p.x - r.x, p.y - r.y) < (r.kind === 'wood' ? 1.6 : 1.25),
         ) ||
           (s.adventure?.trader?.active &&
@@ -102,6 +104,14 @@ export function liveResources(s, x, y) {
   );
 }
 export function terrainAt(s, x, y) {
+  if (
+    s.voyage?.diaryRead &&
+    s.worldVersion === 4 &&
+    terrain(x, y, 4) !== 'water' &&
+    (voyagePathDistance(x, y) < 0.85 ||
+      s.adventure.sites.some((p) => p.kind === 'landmark' && Math.hypot(p.x - x, p.y - y) < 1.5))
+  )
+    return 'grass';
   const bridge = s.adventure?.sites?.find((p) => p.kind === 'bridge' && p.x === x && p.y === y);
   if (bridge?.restored) return 'grass';
   if (
@@ -125,6 +135,7 @@ export function terrainAt(s, x, y) {
     : base;
 }
 export function regionUnlocked(s, x, y) {
+  if (s.worldVersion === 5) return true;
   if (
     s.worldVersion === 4 &&
     (x >= 22 || y >= 16) &&
@@ -138,4 +149,18 @@ export function regionUnlocked(s, x, y) {
     s.unlocked?.includes('main') ||
     (s.buildings.some((b) => b.type === 'lumber') && s.buildings.some((b) => b.type === 'quarry'))
   );
+}
+
+export function voyagePathDistance(x, y) {
+  let best = Infinity;
+  for (const line of VOYAGE_TRAIL)
+    for (let i = 1; i < line.length; i++) {
+      const [a, b] = line[i - 1],
+        [c, d] = line[i],
+        dx = c - a,
+        dy = d - b,
+        t = Math.max(0, Math.min(1, ((x - a) * dx + (y - b) * dy) / (dx * dx + dy * dy)));
+      best = Math.min(best, Math.hypot(x - a - t * dx, y - b - t * dy));
+    }
+  return best;
 }

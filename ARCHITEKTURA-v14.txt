@@ -1,0 +1,31 @@
+SZIGETKERT 0.14 – TECHNIKAI FELÉPÍTÉS
+
+A korábbi projekt maradt az alap. A fejezet nem írja át a meglévő telepek
+helyét, stabil azonosítóit, termelési sorait vagy a nyersanyagok jelentését.
+A megjelenítés cseréje független a mentett játékszabályoktól.
+
+voyage-content.js: stabil helyszín- és projektazonosítók, költségek, idők,
+helyszínek és két külön világ útvonalai. Az aktuális fejezet világazonosítója
+4 marad, az új sziget saját worldVersion 5 értéket kap.
+voyage.js: felújítási állapotgép, egyszeri anyagleadás, történeti jelzők,
+fejtörőállapot, egyetlen következő feladat, mentésellenőrzés.
+island-travel.js: menthető hajóút, világonkénti pillanatképek, közös készlet,
+az otthoni gazdaság monoton időelszámolása. A pillanatkép kifejezett mezőlistát
+használ, nem másolja vissza a teljes mentést önmagába.
+voyage-ui.js és voyage-present.js: helyszíni panelek, feljegyzések és a
+játékállapottól függő grafikai hivatkozások. A kép nem birtokol játékszabályt.
+renderer.js: a meglévő rétegezett vászon és 3D szereplőmegjelenítés bővítése.
+engine.js: a meglévő időalapú termeléshez kapcsolt, egyszer lefutó javítás.
+save.js/adventure.js: v9 migráció, eredeti v8 másolatának elmentése az átírás
+előtt, aktív és megőrzött szigetek, feladatok és hajóút ellenőrzése.
+
+A világpillanatképek a helyi épületeket, dolgozókat, termelési sort, karaktert,
+ködöt, lelőhelyeket és helyszíneket őrzik. A hátizsák és történeti előrehaladás
+közös. Az otthoni, előre kifizetett gyártás is halad távollétben.
+A korábbi régi-város/kaland archívum ettől külön megmarad.
+Az új szigeten jelenleg helyreállítható helyszínek vannak, szabad épületlerakás
+nincs. Nem készült új végtelen véletlenesemény-generátor.
+
+A kliens minden képet és JavaScript-fájlt ugyanarról a saját eredetről tölt.
+A frissítés csak a teljes offline csomag letöltése után aktiválható.
+Nincs új külső kiszolgáló, jogosultság vagy távoli adatbázis.

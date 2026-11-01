@@ -1,3 +1,4 @@
+import { actorPalette } from './avatar-style.js';
 import * as THREE from './lib/three/three.module.js';
 import { GLTFLoader } from './lib/three/addons/loaders/GLTFLoader.js';
 import { clone } from './lib/three/addons/utils/SkeletonUtils.js';
@@ -210,6 +211,7 @@ export class AvatarView {
   getActor(id) {
     if (id === 'hero') return this;
     if (this.actors.has(id)) return this.actors.get(id);
+    const palette = actorPalette(id);
     const root = clone(this.root),
       actor = { root, mixers: [], actions: [], lastTime: null, activeClip: null };
     for (const model of root.children) {
@@ -222,13 +224,11 @@ export class AvatarView {
         if (!mesh.isMesh) return;
         if (mesh.material.name === 'MI_Peasant') {
           mesh.material = mesh.material.clone();
-          mesh.material.color.set(
-            mesh.name.includes('Body') ? (id === 'merchant' ? '#91bda6' : '#d9b791') : '#c4ad91',
-          );
+          mesh.material.color.set(mesh.name.includes('Body') ? palette.shirt : palette.trousers);
         }
         if (mesh.material.name.includes('Hair')) {
           mesh.material = mesh.material.clone();
-          mesh.material.color.set('#8f6b3f');
+          mesh.material.color.set(palette.hair);
         }
       });
     }

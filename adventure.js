@@ -1,3 +1,6 @@
+import { ensureVoyage, validateVoyage } from './voyage.js';
+import { validateStoredWorlds } from './island-travel.js';
+import { restorationHint } from './story-text.js';
 import {
   ensureChapter,
   chapterSitesForNewGame,
@@ -149,6 +152,7 @@ export function upgradeCampaign(s) {
   a.tutorialSeen ??= false;
   if (a.pending && !a.pending.target) assignEventTarget(s);
   ensureChapter(s);
+  ensureVoyage(s);
   return s;
 }
 function stripIslands(s) {
@@ -292,8 +296,7 @@ export function restoration(s, id) {
   const p = siteById(s, id);
   if (!p || p.restored || !p.cost || !p.inspected || !knownSite(s, p))
     return { ok: false, reason: 'Előbb vizsgáld meg a helyszínt.' };
-  if (!siteRequirement(s, p))
-    return { ok: false, reason: 'Előbb a kapcsolódó helyszínt kell helyreállítanod.' };
+  if (!siteRequirement(s, p)) return { ok: false, reason: restorationHint(s, p) };
   if (p.order)
     return { ok: false, reason: 'A ház a helyszíni megrendelés teljesítésével állítható helyre.' };
   if (!afford(s, siteCost(s, p))) return { ok: false, reason: 'Még hiányzik néhány nyersanyag.' };
@@ -502,9 +505,12 @@ export function trade(s, id) {
   t.stock = (t.stock ?? 2) - 1;
   return true;
 }
-export function validateCampaign(s, depth = 0) {
+export function validateCampaign(s, depth = 0, detachedWorld = false) {
+  if (depth > 6) throw Error('Túl mély megőrzött szigetmentés.');
   validateCore(s);
   prepareCampaign(s);
+  validateVoyage(s);
+  if (!detachedWorld) validateStoredWorlds(s, validateCampaign, depth);
   const a = s.adventure;
   if (
     ![1, 2].includes(a.revision) ||
@@ -537,7 +543,7 @@ export function validateCampaign(s, depth = 0) {
       p.y < 0 ||
       p.x >= SIZE ||
       p.y >= SIZE ||
-      !['wreck', 'building', 'bridge', 'marker', 'forage', 'ore'].includes(p.kind) ||
+      !['wreck', 'building', 'bridge', 'marker', 'forage', 'ore', 'landmark'].includes(p.kind) ||
       typeof p.restored !== 'boolean' ||
       typeof p.inspected !== 'boolean' ||
       (p.noticeAccepted != null && typeof p.noticeAccepted !== 'boolean')

@@ -1,83 +1,78 @@
-SZIGETKERT 0.13 – FELFEDEZÉS, MŰHELYEK ÉS EGYÉRTELMŰ JELZÉSEK
-2026. október 31.
+SZIGETKERT 0.14 – OTTHON ÉS ÚJ PARTOK
+2026. november 1.
 
-FRISSÍTÉS A TELEFONON
-1. Bontsd ki a szigetkert-v13-teljes.zip fájlt. Nyisd meg a szigetkert mappát.
-2. GitHub: makaibence/szigetkert → Code → Add file → Upload files.
-3. Finderből húzd be a szigetkert mappa teljes tartalmát, assets és lib mappával
-   együtt. Az index.html a tároló fő szintjére kerüljön. Ne a ZIP-et vagy a külső
-   szigetkert mappát töltsd fel. A Choose your files helyett a behúzást használd
-   a teljes mappaszerkezet feltöltéséhez. Az ellenorzes mappa nem kell a játékhoz.
-4. Commit changes. Azonos néven frissítsd a fájlokat, előtte nem kell törölni őket.
-   Az Actions oldalon várd meg a legújabb közzététel zöld pipáját.
-5. A játék fogaskerekénél: Frissítés keresése, majd Mentés és frissítés.
-   Várd meg az „Offline játékra kész.” jelzést.
-   Ellenőrzés a lenyitható mentési részben: Játékverzió 0.13, Mentés v8.
+Ez a meglévő játék folytatása. Nem kell újrakezdened.
+Az első kereskedői raktárjavítás után a következő feladat az otthonodhoz vezet.
+Ha még előrébb tartasz a régi kalandban, az új történet a meglévő készletedből
+folytatható. A korábbi városaid és megőrzött szigeteid is megmaradnak.
 
-A játék: https://makaibence.github.io/szigetkert/
-Nem kell új kalandot kezdened. A telepített ikont, a webhelyadatokat és a
-játékállást ne töröld. A meglévő sziget folytatható.
-Új telepítés: iPhone Safari → Megosztás → Hozzáadás a Főképernyőhöz.
-A telefonos játékhoz a közzététel után nem kell a laptop.
+MI ÚJ?
+A saját házad az ötödik szintig fejlődhet. A tető, a belső padló, a lakótér,
+a tornác és az udvar külön feladat. A belső padlójavítás nem változtatja meg
+a ház külsejét; a későbbi tornác és udvar új képet kap.
+A házhoz rövid történeti felfedezés kapcsolódik. Innen új parti helyszínek,
+kikötőjavítás, helyszíni fejtörő és a saját hajód rendbetétele vezet tovább.
+Egy új, kisméretű, bejárható sziget is elkészült, saját felfedezéssel és
+helyszíni feladatokkal. Oda és vissza lehet hajózni. A történet további
+részleteit a játékban találod meg, az útmutató nem árulja el a megfejtést.
 
-A VÁLTOZÁSOK
-A felfedezett új épület vagy híd közelébe érve bemutató jelenik meg.
-Amíg ezt nem fogadod el, a javítás részletpanelje rejtve marad. A Most nem
-vagy az ablak bezárása után elmehetsz; visszatérve újra megkapod a bemutatót.
-Az elfogadás mentődik, így a már elfogadott bemutató nem ismétlődik.
-A korábban megvizsgált épületeket a frissítés ismertként kezeli.
-A híd első bemutatója csak a helyszínről szól. Az anyagigény a Megnézem a
-javítást után, külön részletpanelben jelenik meg.
-A bázis egyszeri készletét többszöri visszatérés sem adja oda újra.
-Az épületekhez nem kerül még külön, ismétlődő zöld felfedezési értesítés is.
+A fejtörő próbálkozásai nem kerülnek nyersanyagba. A beállítások megmaradnak,
+és kérhetsz fokozatos segítséget. A hajójavításhoz szükséges vasnak most
+konkrét szerepe van: a régi szénégető és kovácsműhely használata is előkerül.
+A kereskedőnél a hajóhoz kapcsolódó egyszeri anyagcsere külön helyszíni ajánlat.
 
-A feladatok kevésbé árulják el az ismeretlen helyszínek pontos irányát.
-Az ács házán hagyott üzenet indokolja, miért vár a bázisodnál.
-A történetének folytatása és a 2. szintű műhelybővítés változatlan marad.
-A hátizsák eleinte csak a közös, elkölthető készlet szerepét magyarázza.
-A műhelybe beadott alapanyagról csak folyó gyártás mellett ír.
+MENTÉS ÉS RÖVID JÁTÉKALKALMAK
+A mentés v9. A v1–v8 állásokat a játék átveszi; a korábbi nyersanyagokat,
+épületazonosítókat, szinteket és kifizetett gyártási sorokat megtartja.
+Régi mentés első betöltésekor a nyers eredeti állásról helyi másolat készül.
+A javítás anyagát egyszer adod le. A folyamatban lévő javítás bezárás után is
+befejeződik. A hajóút is mentődik, megszakítás után folytatódik.
+A két sziget külön őrzi a felfedezett területet, épületeket és lelőhelyeket.
+A hátizsák közös. Az otthoni műhelyek és termelőtelepek távollétben is
+elszámolnak, legfeljebb 8 órát, ugyanazt az időt csak egyszer jóváírva.
+A készletet nem kell a hajóra kézzel átpakolnod.
+A mentés saját böngésződben van, nincs fiók vagy adatbázis. Az export és import
+a fogaskerék alatti lenyitható biztonsági részben maradt. Az import előbb
+jóváhagyást kér egy játékbeli ablakban, és helyi másolatot készít a lecserélt
+állásról. A webhelyadatok törlése a helyi mentéseket is törölheti.
 
-A deszka és a faragott kő készítése 50%-kal gyorsabb lett. A receptek és a
-beadott anyagmennyiségek nem változtak. A már folyó gyártás megmarad, az új
-sebességgel folytatódik. A műhely feletti kis jelző az elkészült mennyiség,
-a hátralévő anyag és késztermék mellett a teljes hátralévő időt is becsli.
-Az idő az ellátás és a pihenés változásával módosulhat, nem vállalt határidő.
-A csúszka alatti időbecslés és a gomb között több hely marad.
-A részletpanel fejlécén eltűnt az eltérő színű, különálló téglalap.
-Gyűjtéskor a ténylegesen kapott mennyiség felszálló +számmal és anyagikonnal
-jelenik meg. A gyors, ismételt koppintások megmaradtak; a kijelzés nem ad
-külön jutalmat és nem indít második gyűjtési folyamatot.
+FRISSÍTÉS A MEGLÉVŐ GITHUB OLDALADON
+1. Bontsd ki a szigetkert-v14-teljes.zip fájlt.
+2. Nyisd meg a makaibence/szigetkert tároló Code oldalát.
+3. Add file → Upload files.
+4. A kibontott szigetkert mappa TELJES TARTALMÁT húzd a feltöltőfelületre.
+   Az assets és lib mappa is kerüljön bele. Az új három grafikai csomag és
+   az assets/frames.json nélkül ez a változat nem tud helyesen elindulni.
+   Ne a ZIP-et vagy a külső szigetkert mappát húzd be. Az index.html és az
+   app.js a tároló fő szintjére kerüljön. A régi fájlokat nem kell törölni:
+   az azonos nevűek cserélődnek. Az ellenorzes mappát nem kell feltölteni.
+5. Nyomd meg a Commit changes gombot. Várd meg az Actions oldalon a legújabb
+   pages build and deployment sikeres zöld pipáját.
+6. iPhone-on nyisd meg a meglévő játékot. Fogaskerék → Frissítés keresése.
+   Amikor elkészült a letöltés: Mentés és frissítés.
+7. A lenyitható biztonsági résznél ezt kell látnod: Játékverzió 0.14, Mentés v9.
+   Várd meg az Offline játékra kész jelzést.
+Ne töröld a telepített ikont vagy a Safari webhelyadatait. A folytatáshoz ne
+nyomd meg az Új kaland gombokat. A régi szigeteden indul az új feladat.
 
-A kereskedő szekere és maga a kereskedő a kereskedőudvar mellé került,
-az ács házától távolabb, szabadabb területre. A szekérre koppintás ugyanazt
-az udvart választja ki. A részletpanel leírja a kapcsolatukat.
-Az Anyagcsomag átadása gomb egységes zöld gomb. Az ajánlat feltételesen fogalmaz:
-a kereskedő vásárolna tőled, és csak átadáskor vonja le az anyagot, fizeti az ezüstöt.
-A készlet elegendővé válásakor a nyitott panelen is engedélyeződik a gomb.
-Az udvar jelzése Eladás · kész, nem fejlesztési nyíl. A bázis, az ács otthona
-és a kereskedőudvar nem kap félrevezető 1. szint címkét, mert jelenleg nem
-fejleszthetők a termelőépületekhez hasonlóan.
+ELSŐ IPHONE-TELEPÍTÉS
+Safari-ban nyisd meg: https://makaibence.github.io/szigetkert/
+Megosztás → Hozzáadás a Főképernyőhöz → Hozzáadás.
+Az első betöltéshez internet kell; az offline-kész jelzés után saját ikonnal
+és teljes képernyőn is elindíthatod. A laptop később nem kell a játékhoz.
 
-A TARTALOM JELENLEGI VÉGE
-Az első fejezet és a termelő/műhelyfejlesztések befejezése után a fő feladatsor
-jelzi, hogy az első fejezet teljes. A kereskedő további eladásai opcionálisak.
-Ebben a frissítésben nem készült új történeti fejezet vagy új bázisfejlesztés.
-A korábban megszerzett haladó anyagok, például faszén és vas, nem törlődnek.
-A következő fejezetre javasolt irány a KOVETKEZO-FEJEZET-v13.txt fájlban szerepel.
-
-MENTÉS ÉS BEÁLLÍTÁSOK
-A játék magától ment; a hétköznapi játékhoz nem kell kézi mentés.
-A fogaskerék neve Beállítások és frissítés. A frissítés és a súgó itt marad.
-A kézi mentési lehetőségek opcionálisak, külön lenyitható részben vannak.
-A helyi automatikus mentés telefoncsere vagy webhelyadat-törlés ellen nem véd;
-az export ilyenkor hasznos külön másolat.
-A frissítés előtti teljes nyers mentés külön helyi kulcsba kerül. A készletek,
-épületazonosítók, pozíciók, fejlesztések, gyártási sorok és régi szigetek megmaradnak.
-A mentésverzió v8 marad, a bemutatók elfogadása kiegészítő mentett adat.
-A ZIP-ben nincs személyes játékállás vagy tesztállás.
-
-HELYI INDÍTÁS ÉS TESZT
+HELYI INDÍTÁS ÉS TESZTELÉS
 A szigetkert mappában: python3 serve.py
-Nyisd meg a kiírt localhost-címet; ne file:// címről indítsd az index.html-t.
-Tesztek: npm test vagy node test.mjs. Csomagtelepítés nem szükséges.
-A mobilméretű böngészős tesztek sikeresek, valódi iPhone 15-ön még nem teszteltem.
+Cím: http://localhost:8080/
+Ellenőrzések: node test.mjs (Node.js 22 vagy újabb).
+Nincs szükség csomagtelepítésre, fizetős szolgáltatásra vagy App Store-ra.
+A teljes forrás, a grafikai fájlok és a szükséges könyvtárak a ZIP-ben vannak.
+A localhost címet a telefon önmagában nem éri el, a telefonos játékhoz a
+GitHub Pages címet használd.
+
+A világ festett, izometrikus 2D környezet, valódi animált 3D karakterekkel.
+Az új házak és a hajó állapotképeket használnak. A kötél, a ringás és a
+fény finom mozgást kap; ez nem teljesen modellezett, szabadon forgatható világ.
+A hajó javításának négy munkalépéséhez három fő hajóábra tartozik.
+Ez az első befejezhető hajós fejezet, egy új szigettel. További szigetek
+és korlátlan történeti tartalom még nem készült el.

@@ -1525,3 +1525,205 @@ footer {
   box-shadow: none;
   border: 1px solid #c7c4a5;
 }
+
+/* Specificity matches the earlier #detail p reset, so the actual gap survives. */
+#detail .craft-planner p.craft-time {
+  margin: 12px 0 24px;
+  line-height: 1.5;
+}
+
+/* Chapter II: compact local work, a saved mechanism and a short physical voyage. */
+.voyage-body {
+  font-size: 12px;
+  line-height: 1.5;
+  display: block;
+}
+#detail .voyage-body p {
+  margin: 10px 0;
+}
+.voyage-body h4 {
+  font-size: 14px;
+  margin: 13px 0 8px;
+}
+.voyage-body button {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #63813d;
+  border-radius: 11px;
+  background: linear-gradient(#98b45b, #618239);
+  color: #fff8df;
+  margin: 13px 0 5px;
+  padding: 10px;
+  font-weight: 650;
+}
+.voyage-body button:disabled {
+  filter: grayscale(1);
+  opacity: 0.48;
+}
+.voyage-picture {
+  display: block;
+  width: 160px;
+  height: 112px;
+  object-fit: contain;
+  margin: 8px auto;
+}
+.voyage-stages {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+.voyage-stages span {
+  border: 1px solid #c2c894;
+  background: #e6e8cb;
+  border-radius: 8px;
+  padding: 5px 9px;
+}
+.voyage-project {
+  padding: 12px;
+  border: 1px solid #d6c79f;
+  border-radius: 12px;
+  background: #fcf5e3;
+}
+.voyage-project progress {
+  width: 100%;
+  height: 12px;
+  accent-color: #7c9d4b;
+}
+.lever-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.lever-controls button {
+  margin: 0;
+  font-size: 12px;
+}
+.lever-controls button:last-child {
+  grid-column: 1/-1;
+}
+.gate-diagram {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 10px;
+  background: linear-gradient(#567b7d, #30575e);
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px #e9d7ac;
+  font-size: 10px;
+  gap: 8px;
+  color: #fff1c7;
+  margin: 12px 0;
+}
+.gate-weight {
+  display: grid;
+  place-items: center;
+  border: 2px solid #c9b18a;
+  border-radius: 8px;
+  width: 36px;
+  height: 40px;
+  background: #7a7770;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  box-shadow: 0 -10px 0 -8px #cfbc87;
+}
+.gate-door {
+  padding: 16px 5px;
+  background: repeating-linear-gradient(
+    90deg,
+    #936b40 0px,
+    #936b40 13px,
+    #6a4d30 14px,
+    #6a4d30 16px
+  );
+  border: 2px solid #d6b879;
+  transition: transform 0.4s;
+}
+.released .gate-door {
+  transform: translateY(-7px);
+}
+.weight-rubbing {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  background: #e4d4ac;
+  padding: 18px;
+  border-radius: 10px;
+  margin: 12px 0;
+}
+.weight-rubbing span {
+  font: 700 22px Georgia;
+  padding: 10px;
+  border: 2px solid #a59268;
+  border-radius: 8px;
+}
+.weight-rubbing .marked {
+  border-color: #487468;
+  box-shadow: 0 0 0 2px #8fbb9b;
+}
+#sailing {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: linear-gradient(#1e788f, #47b5b8 58%, #b1dbcc);
+  color: #fff6d4;
+  text-align: center;
+  padding: 30px;
+}
+#sailing[hidden] {
+  display: none;
+}
+#sailing h2 {
+  font: 700 24px Georgia;
+  margin: 25px 0 18px;
+  z-index: 1;
+}
+#sailing p {
+  font-size: 12px;
+  line-height: 1.5;
+  max-width: 280px;
+  z-index: 1;
+}
+#sailing progress {
+  width: 220px;
+  height: 8px;
+  accent-color: #e6ce83;
+  z-index: 1;
+}
+#sailingboat {
+  width: min(290px, 80vw);
+  height: 240px;
+  object-fit: contain;
+  z-index: 1;
+  transform: translateX(calc((var(--sail) - 0.5) * 90px));
+  filter: drop-shadow(0 18px 9px #155c7055);
+}
+.sailing-water {
+  position: absolute;
+  inset: 20% -30%;
+  background: repeating-radial-gradient(
+    ellipse at 50% 50%,
+    transparent 0 38px,
+    #c5f5ed25 40px 41px,
+    transparent 43px 80px
+  );
+  animation: sailing-waves 3s linear infinite;
+  transform: rotate(-7deg);
+}
+@keyframes sailing-waves {
+  to {
+    translate: 40px 35px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sailing-water {
+    animation: none;
+  }
+}

@@ -116,3 +116,5 @@ assert.ok(time < 1200, 'Opening chapter remains reachable without grinding');
 console.log(
   'PASS: complete compact-chapter route, finite revealed supply, bridge and specialist gates, processing chains, carpenter exchange and merchant order within fifteen simulated minutes; no injected material income.',
 );
+
+export const completedChapter = s;

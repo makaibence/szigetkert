@@ -1,43 +1,66 @@
-SZIGETKERT 0.13 – ELLENŐRZÉSI JEGYZŐKÖNYV
-2026. október 31.
+SZIGETKERT 0.14 – ELLENŐRZÉSI JEGYZET
+2026. november 1.
 
-A meglévő 0.12 projekt folytatása. A 0.12 teljes ZIP és az átalakítás előtti
-forrásmásolat megmaradt. Új grafikai asset nem készült, az épületek nem költöztek el.
-A fejezethez tartozó kereskedő és szekér az udvar mellé került, az őket takaró
-közeli növényzetet a megjelenítés elrejti. A nyersanyagállapot nem törlődik.
+EREDMÉNY
+23 automatikus PASS ellenőrzéscsoport a node test.mjs futtatásakor.
+A korábbi funkciók ellenőrzései is megmaradtak. A ZIP-ből külön kibontott
+példányon is mind a 23 ellenőrzéscsoport sikeresen lefutott.
 
-21 SIKERES AUTOMATIZÁLT TESZTCSOPORT
-node test.mjs. Megmaradtak a korábbi gyűjtési, munkás-, navigációs, gazdasági,
-mentési, ellátási, offline, fejezetsorrendi és gyártási regressziós tesztek.
-Az új tesztek ellenőrzik a közelségi bemutató elfogadásának feltételeit,
-a távolodás/visszatérés és az újratöltés adatmegőrzését, az egyszeri báziskészletet,
-a kereskedő és ácsház távolságát és a járható megközelítést; az 50%-kal gyorsabb,
-anyagra fedezett gyártást; a kijelzett gyűjtési hozam és a jóváírás egyezését;
-a fejezetvégi állapotot és a frissítés előtti nyers másolatot.
-A régi időzítési tesztek az új feldolgozási sebességhez igazodtak; az anyagegyenleg
-és az egyszeri jóváírás ellenőrzése nem változott.
-Külön v3/v7/v8 állásokon ellenőrizve a változatlan készletek, épülethelyek,
-azonosítók és szintek, nyersanyagállapot, gyártási adatok és export/import.
+ÚJ AUTOMATIKUS ELLENŐRZÉSEK
+V8 → v9 átvétel az eredeti készlet, épületazonosítók, szintek, gyártási sor,
+karakter és lelőhelyadatok megőrzésével. Nyers, átírás előtti másolat létrejötte.
+A régi megőrzött szigetek az új hajózási mentéssel együtt is érvényesek.
+24 ténylegesen járható útvonal az új történeti tesztben, biztonságos megállási
+pontokkal. A három fejtörőváltozat és a helyszíni feltételek ellenőrzése.
+Párhuzamos javítás és ismételt anyagleadás tiltása. Megkezdett javítás mentése,
+folytatása és egyszeri befejezése. A nem megjelenített szigeten befejeződő
+munka a megőrzött helyszín állapotát is frissíti.
+Helyszíni, egyszeri kereskedői csere. A hajó javításának előfeltételei.
+Hajóút közbeni mentés és visszatöltés; oda-vissza váltás, külön felfedezett
+terület és megőrzött épületek, közös készlet.
+Az otthoni készlet és előre kifizetett műhelymunka távolléti elszámolása,
+ismételt jóváírás nélkül. Visszafelé állított óra sem indít ismételt jóváírást.
+A teljes új történeti út és az ötödik otthonszint elérhető a tesztben.
+Hibás projekt, hajóút, megőrzött világ, épülettípus és előrehaladás elutasítása.
 
-TÉNYLEGES BÖNGÉSZŐS ELLENŐRZÉS 393×852 MÉRETBEN
-Normál játékindítás után a karakterrel a bázis közelébe mentem. A bemutató
-kattintás nélkül megjelent, a részletpanel rejtve maradt. A Most nem után
-eltávolodtam és visszamentem; ugyanaz a bemutató újra megjelent, többletkészlet nélkül.
-Elfogadás után bezárult a bemutató, és csak a díjmentes rendbetétel panelje nyílt meg.
-A hídhoz közeli tesztállás betöltésekor ugyanilyen bemutató jelent meg.
-A storyextras üres volt, a detail rejtve. A Megnézem a javítást gomb után
-jelent meg a nyersanyagigény és a Helyreállítás gomb.
-A hátizsákban műhely nélküli induláskor nem szerepelt feldolgozási magyarázat.
-Mindkét működő műhely fölött látszott a mennyiség és a kb. hátralévő idő.
-A kereskedőudvarnál megjelent az Eladás · kész felirat és a zöld átadásgomb.
-Az anyagátadás után új ajánlat jelent meg. A kereskedő látható volt a szekér mellett.
-Gyors, ismételt bányászati koppintások képsorán megjelentek a felszálló +1 kő
-jelzések. A mellékelt hozamkép valódi játékból készült, nem utólag rajzolt elem.
-A végleges offline csomag elkészülte után leállítottam a külön tesztkiszolgálót;
-az oldal újratöltése a teljes világgal és a mentett állással sikerült.
+BÖNGÉSZŐS ELLENŐRZÉS, 393 × 852
+Külön tesztcímen történt, a saját játékállástól elkülönítve.
+Tető- és padlójavítás, napló elolvasása, kikötői fejtörő, próbálkozás,
+fokozatos segítség és a kapu nyitása a tényleges gombokkal kipróbálva.
+Hajótestjavítás indítása és újratöltése. Hajóút, érkezés, helyszíni bemutató,
+az új sziget bejárása és javításai, visszahajózás, otthon negyedik és ötödik
+szintjének elkészülése szintén ellenőrizve.
+Az új sziget partján a hajó teljes ábrája belefér az induló mobilnézetbe.
+Nincs vízszintes oldaltúlfutás. A megjelenítő WebGL-állapota ready, a látott
+képkockasebesség körülbelül 28 FPS volt a Mac böngészőjében.
+A végén nem volt rögzített böngészőkonzol-hiba.
+A játékból exportált valódi v9 tesztmentés érvényes: mindkét sziget, a hajó és
+a helyreállított helyszínek megmaradtak.
 
-KORLÁTOK
-A vizsgálat asztali böngésző mobilméretű nézetében történt, nem fizikai iPhone-on.
-A feldolgozási idő becslés. A készülék teljesítménye és az érintés kényelme
-valódi készüléken ellenőrizendő. Új történeti fejezet nincs ebben a változatban.
-A következő fejezet terve javaslat, nem kész funkció.
+OFFLINE PRÓBA
+A helyi tesztkiszolgálót leállítottam, majd a böngészőben újratöltöttem a játékot.
+Az új sziget, a szereplők, a már elkészült javítás és a folytatás betöltődött.
+A hazautazás is működött a leállított kiszolgáló mellett.
+Ez valódi, elérhetetlen eredettel végzett böngészős gyorsítótár-próba;
+nem iPhone-on bekapcsolt repülőgépes módú mérés.
+A frissítési felületen Offline játékra kész állapot jelent meg.
+
+VIZUÁLIS ELLENŐRZÉS
+Az osszehasonlitas-v14.html és .png a korábbi látványterv mellett tényleges,
+393×852-es játékfotókat mutat. A részletes, meleg színű kőházak, kikötő és hajó
+egységesebb; a régi világot nem cseréltük új egyszerű alakzatokra.
+A terep, a part és az utak még eltérnek a referenciától. Teljes vizuális egyezést
+nem állítunk. A világ festett képek és valódi animált 3D szereplők együttese.
+A házak, hajó és kapu nem külön-külön modellezett, teljes 3D szerkezetek.
+
+A TESZTEK HATÁRAI
+A történeti/útvonalas és böngészős újfejezet-próbák előkészített tesztállásokat,
+a javításokhoz elegendő mesterséges készletet is használtak. Ez nem teljes,
+valós idejű gazdasági egyensúlymérés az új fejezeten.
+A korábbi, első tizenöt perces fejezetnek külön, hozzáadott anyagbevétel nélküli
+végigjátszási tesztje van, amely továbbra is sikeres.
+Valódi iPhone 15 hardverteszt, akkumulátor- és hőterhelésmérés nem történt.
+A Safari telepítési frissítését és a kétujjas kezelést érdemes telefonon is
+kipróbálnod. Az egy új sziget jelenlegi története befejezhető, de nincs még
+korlátlan számú további fejezet.
+A tesztmentéseket és a személyes játékállást a letölthető ZIP nem tartalmazza.

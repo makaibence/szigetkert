@@ -24,6 +24,7 @@
       <div id="world">
         <canvas
           id="map"
+          tabindex="0"
           aria-label="Sziget. Húzd és tartsd az ujjad a futáshoz. Két ujjal mozgasd és nagyítsd a kamerát. Koppints egy tárgyra a megvizsgálásához."
         ></canvas>
         <div id="joystick" hidden aria-hidden="true"><span id="stickknob"></span></div>
@@ -41,7 +42,7 @@
         <section id="panel"></section>
       </div>
     </main>
-    <footer><span id="savestatus">Automatikus mentés</span><span>V0.13</span></footer>
+    <footer><span id="savestatus">Automatikus mentés</span><span>V0.14</span></footer>
     <div id="toast" role="status"></div>
     <dialog id="modal">
       <button id="close" class="close" aria-label="Bezárás">✕</button>
@@ -79,6 +80,13 @@
       <div id="storyextras"></div>
       <div id="storyactions"></div>
     </dialog>
+    <div id="sailing" hidden role="status" aria-live="polite">
+      <div class="sailing-water"></div>
+      <img id="sailingboat" alt="A saját hajód úton" />
+      <h2 id="sailingtitle"></h2>
+      <progress id="sailingprogress" max="1"></progress>
+      <p>A szigeted mentve van. Bármikor folytathatod az utat.</p>
+    </div>
     <script type="module" src="app.js"></script>
   </body>
 </html>

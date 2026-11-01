@@ -1,7 +1,8 @@
+import { voyageNotice } from './voyage-present.js';
 import { knownSite } from './adventure.js';
 
 export function noticeEligible(p) {
-  return !!p && (p.kind === 'bridge' || p.kind === 'building');
+  return !!p && (p.kind === 'bridge' || p.kind === 'building' || p.kind === 'landmark');
 }
 export function needsNotice(s, p) {
   return noticeEligible(p) && !p.restored && !p.noticeAccepted && knownSite(s, p);
@@ -17,7 +18,8 @@ export function acknowledgeSiteNotice(s, id) {
   p.noticeAccepted = true;
   return true;
 }
-export function siteNotice(p) {
+export function siteNotice(p, s) {
+  if (p.voyageRole) return voyageNotice(s, p);
   if (p.kind === 'bridge')
     return {
       title: 'A leszakadt fahíd',
@@ -32,12 +34,12 @@ export function siteNotice(p) {
     ],
     farm: [
       'Egy elvadult kert',
-      'A gaz mögött gondosan kialakított ágyások rajzolódnak ki. Egy kis munkával újra élelmet adhatnának.',
+      'A gaz mögött gondosan kialakított ágyások rajzolódnak ki. Egy kis munkával újra élelmet adhatnának. A munkások ebből esznek pihenéskor: feltöltődik az energiájuk, és gyorsabban tudnak dolgozni.',
       'Megnézem a kertet',
     ],
     lumber: [
       'Nyomok az erdőben',
-      'Farönkök és egy régi szerszámos szín bukkannak elő. Valaki egykor ebből az erdőből látta el a telepet.',
+      'Farönkök között egy régi szerszámos kunyhóra bukkansz. Valaki egykor ebből az erdőből látta el a telepet.',
       'Megnézem a telepet',
     ],
     quarry: [

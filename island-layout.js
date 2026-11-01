@@ -1,3 +1,4 @@
+import { ECHO_SITES, ECHO_TRAILS } from './voyage-content.js';
 import { CHAPTER_SITES, CHAPTER_TRAILS } from './content.js';
 // Stable authored locations. Player-facing lists reveal only places already discovered.
 export const LOCATIONS = [
@@ -126,6 +127,24 @@ export function pathDistance(x, y, version = 2) {
   return best;
 }
 export function authoredTerrain(x, y, noise, version = 2) {
+  if (version === 5) {
+    const inside = ((x - 9) / 7.8) ** 2 + ((y - 10) / 6.8) ** 2 < 1 + Math.sin(y * 0.9) * 0.045;
+    if (!inside) return 'water';
+    if (ECHO_SITES.some((p) => Math.hypot(p.x - x, p.y - y) < 2)) return 'grass';
+    let trail = Infinity;
+    for (const line of ECHO_TRAILS)
+      for (let i = 1; i < line.length; i++) {
+        const [a, b] = line[i - 1],
+          [c, d] = line[i],
+          dx = c - a,
+          dy = d - b,
+          t = Math.max(0, Math.min(1, ((x - a) * dx + (y - b) * dy) / (dx * dx + dy * dy)));
+        trail = Math.min(trail, Math.hypot(x - a - t * dx, y - b - t * dy));
+      }
+    if (trail < 1.1) return 'grass';
+    if ((x === 11 && y === 12) || (x === 6 && y === 7)) return 'mountain';
+    return noise(x + 84, y + 9) > 0.28 ? 'forest' : 'grass';
+  }
   if (version >= 4) {
     const west = ((x - 8) / 7.2) ** 2 + ((y - 9.6) / 6.3) ** 2 < 1;
     const east = ((x - 20.5) / 7.1) ** 2 + ((y - 12) / 6.5) ** 2 < 1;

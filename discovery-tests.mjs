@@ -91,6 +91,7 @@ const bridge = s.adventure.sites.find((p) => p.id === 'bridge');
 assert.ok(!siteNotice(bridge).text.includes('fa'));
 assert.ok(!siteNotice(bridge).text.includes('Szükséges'));
 const old = structuredClone(s);
+old.version = 8;
 old.adventure.sites.forEach((p) => delete p.noticeAccepted);
 const raw = JSON.stringify(old),
   map = new Map([[STORE, raw]]);
@@ -106,7 +107,7 @@ max.buildings.push(
 );
 max.buildings.forEach((b) => (b.level = 3));
 assert.ok(firstChapterComplete(max));
-assert.equal(currentTask(max).title, 'Az első fejezet teljes');
+assert.equal(currentTask(max).title, 'A ház, ami hazavár');
 const app = await fs.readFile(new URL('./app.js', import.meta.url), 'utf8');
 assert.ok(!app.includes('Az átjáró helyreállításához:'));
 assert.ok(app.includes('s.resources[node.kind] - beforeGather'));

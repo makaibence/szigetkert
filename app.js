@@ -1,3 +1,7 @@
+import { voyagePanel, applyVoyageAction } from './voyage-ui.js';
+import { voyageSite, inspectVoyageSite, readVoyageDiary, projectDone } from './voyage.js';
+import { beginSailing, advanceSailing, settleAway, awayEconomy } from './island-travel.js';
+import { carpenterSpeech } from './story-text.js';
 import {
   noticeEligible,
   needsNotice,
@@ -92,6 +96,7 @@ let s = loaded.state,
   previouslyHidden = document.hidden;
 const elapsed = tick(s, Date.now(), false);
 produceOfflineWorkers(s, elapsed);
+settleAway(s, Date.now());
 let route = [],
   siteTarget = null,
   selected = null,
@@ -104,7 +109,7 @@ let route = [],
   lastUI = 0,
   ready = false;
 const camera = {
-  zoom: 1.08,
+  zoom: s.worldVersion === 5 ? 0.98 : 1.08,
   x: 0,
   y: 0,
   anchorY: 0.53,
@@ -148,6 +153,7 @@ function save() {
   }
 }
 function settle() {
+  settleAway(s, Date.now());
   const dt = tick(s, Date.now(), false);
   if (previouslyHidden) produceOfflineWorkers(s, dt);
 }
@@ -198,12 +204,12 @@ function renderPanel() {
       )
       .join(
         '',
-      )}</div><p class="hint">A hátizsák a szigeten összegyűjtött, szabadon felhasználható anyagaidat mutatja.${s.production?.jobs.length ? ' A műhelynek beadott alapanyag már nincs itt; a késztermék automatikusan ide kerül.' : ''}</p>`;
+      )}</div>${s.voyage?.diaryRead ? `<section class="voyage-project"><h4>Megőrzött tárgyak</h4><p>Elázott hajónapló${s.voyage.riggingOwned && !projectDone(s, 'boat-rigging') ? ' · Vitorlavászon és kötélzet' : ''}${s.voyage.beaconLit ? ' · A napló megkerült lapja' : ''}</p></section>` : ''}<p class="hint">A hátizsák a szigeten összegyűjtött, szabadon felhasználható anyagaidat mutatja.${s.production?.jobs.length ? ' A műhelynek beadott alapanyag már nincs itt; a késztermék automatikusan ide kerül.' : ''}</p>`;
     return;
   }
   if (sheet === 'supply') {
     const previousScroll = $('panel').scrollTop;
-    const q = supplySummary(s),
+    const q = supplySummary(awayEconomy(s)),
       fmt = (n) => n.toLocaleString('hu', { maximumFractionDigits: 1 });
     const reserve =
       q.minutesLeft == null
@@ -250,6 +256,11 @@ function detail() {
     detailOwner = null;
     return;
   }
+  const special = voyagePanel(s, p, renderer);
+  if (special) {
+    renderVoyageDetail(p, special);
+    return;
+  }
   const b = p.buildingId ? s.buildings.find((b) => b.id === p.buildingId) : null,
     near = Math.hypot(s.hero.x - p.x, s.hero.y - p.y) <= 1.8;
   let note = '',
@@ -286,7 +297,9 @@ function detail() {
       ? o.text
       : carpenterWaiting(s)
         ? 'Az ajtón hagyott üzenet szerint az ács a bázisodnál keres. Előbb beszélj vele.'
-        : 'Előbb a kapcsolódó műhelyt kell helyreállítanod.';
+        : !s.buildings.some((b) => b.type === 'sawmill')
+          ? 'Előbb keresd meg és indítsd el a régi fűrészműhelyt. Ott elkészítheted az ácsnak kért deszkát.'
+          : 'Beszélj az áccsal a bázisnál, hogy megbeszéljétek a tető javítását.';
     if (o) {
       rows =
         materialAmounts(o.needs, renderer, { available: s.resources }) +
@@ -300,7 +313,7 @@ function detail() {
     const check = restoration(s, p.id);
     note =
       (p.type === 'farm'
-        ? 'Helyreállítva közvetlenül élelmet termel. '
+        ? 'Helyreállítva élelmet termel. A munkások ebből esznek pihenéskor: visszanyerik az energiájukat, és gyorsabban dolgoznak. '
         : p.type === 'hut'
           ? 'Kezdőbázis: közös készlet és találkozóhely. Nem termel. '
           : '') + check.reason;
@@ -329,7 +342,7 @@ function detail() {
       rows = `<div><span>Munkahelye</span><b>Fűrészműhely · ${s.buildings.find((v) => v.type === 'sawmill')?.level || 1}. szint</b></div><p class="hint">A jobb munkapadot és vezetősínt ő készítette. A következő műhelybővítés anyagigényét és munkadíját a fűrészműhelynél látod.</p>`;
     } else if (b.type === 'tradepost') {
       note =
-        'Az udvarhoz tartozik a szekér és a mellette álló kereskedő. Itt adhatod el neki a javításaihoz kért anyagokat; az árat előre látod.';
+        'Az udvar mellett álló kereskedőnek itt adhatod el a javításaihoz kért anyagokat. Az árat előre látod.';
       rows = '';
     } else {
       const workers = s.workers.filter((w) => w.buildingId === b.id),
@@ -488,6 +501,78 @@ function detail() {
       }
     };
 }
+function renderVoyageDetail(p, view) {
+  const host = $('detail'),
+    scroll = detailOwner === selected ? host.scrollTop : 0;
+  host.hidden = false;
+  patchMarkup(
+    host,
+    `<div class="site-head"><div><h3>${escape(view.title)}</h3><p>${escape(view.note)}</p></div><button id="dismissdetail" aria-label="Panel bezárása">✕</button></div>${view.html}`,
+  );
+  detailOwner = selected;
+  host.scrollTop = scroll;
+  $('dismissdetail').onclick = () => {
+    selected = null;
+    detail();
+  };
+  host.querySelectorAll('[data-voyage-action]').forEach(
+    (button) =>
+      (button.onclick = () => {
+        const action = button.dataset.voyageAction;
+        if (action === 'approach') {
+          approachSite(p);
+          return;
+        }
+        if (action === 'diary') {
+          dialog(
+            'Egy elázott hajónapló',
+            'A lapok közt a szigeted partvonala és egy régi rakodó rajza látszik. Az utolsó olvasható sor: „Ha újra fény lesz az öbölben, megtaláljuk egymást.” A bázis mögötti parton még lehet nyoma a kikötőnek.',
+            [
+              {
+                label: 'Megőrzöm a naplót',
+                run: () => {
+                  readVoyageDiary(s);
+                  save();
+                  $('storymodal').close();
+                  render(true);
+                },
+              },
+            ],
+          );
+          return;
+        }
+        settle();
+        if (action.startsWith('sail:')) {
+          if (beginSailing(s, action.slice(5))) {
+            route = [];
+            drive = { x: 0, y: 0 };
+            selected = null;
+            closeSheet();
+            save();
+            render(true);
+          }
+          return;
+        }
+        const result = applyVoyageAction(s, p, action);
+        if (result.feedback) s.voyage.feedback = result.feedback;
+        if (result.ok) {
+          save();
+          render(true);
+        }
+        if (result.feedback && $('gate-feedback')) $('gate-feedback').textContent = result.feedback;
+      }),
+  );
+}
+function updateSailingOverlay() {
+  const trip = s.voyage?.travel,
+    layer = $('sailing');
+  layer.hidden = !trip;
+  if (!trip) return;
+  $('sailingtitle').textContent = trip.to === 'home' ? 'Úton hazafelé' : 'Úton Borostyán-szigetre';
+  $('sailingboat').src = renderer.thumbnail('voyage', 7, 256) || '';
+  $('sailingprogress').value = trip.elapsed / trip.total;
+  layer.style.setProperty('--sail', String(trip.elapsed / trip.total));
+}
 function finishOrder(p) {
   const order = activeOrder(s, p.id);
   if (order && deliverOrder(s, p.id, order.id)) {
@@ -500,6 +585,7 @@ function finishOrder(p) {
 function refreshDetailValues() {
   const p = selectedSite(),
     b = p?.buildingId && s.buildings.find((v) => v.id === p.buildingId);
+  if (p && voyagePanel(s, p, renderer)) return;
   if (!p || $('detail').hidden || craftDragging || document.activeElement?.id === 'craftamount')
     return;
   $('detail')
@@ -558,6 +644,7 @@ function refreshDetailValues() {
 }
 let detailSignature = '';
 function render(force = false) {
+  updateSailingOverlay();
   $('resources').innerHTML = Object.entries(RES)
     .filter(([k]) => ['wood', 'stone', 'food', 'gold'].includes(k))
     .map(
@@ -568,7 +655,7 @@ function render(force = false) {
   $('nextgoal').textContent = 'Feladat: ' + currentTask(s).title;
   $('nextgoal').setAttribute('aria-expanded', String(sheet === 'quests'));
   $('backpack').innerHTML = materialIcon('backpack', renderer);
-  const q = supplySummary(s),
+  const q = supplySummary(awayEconomy(s)),
     supply = $('supply');
   supply.textContent = `Ellátottság ${q.level}% · ${q.working} dolgozik`;
   supply.dataset.level = q.level >= 70 ? 'good' : q.level >= 35 ? 'low' : 'poor';
@@ -595,7 +682,11 @@ function render(force = false) {
     s.adventure.items['repair-kit'] || 0,
     p && Math.hypot(s.hero.x - p.x, s.hero.y - p.y) <= 1.8,
   ]);
-  if (force || signature !== detailSignature) {
+  if (
+    force ||
+    (selectedSite() && voyagePanel(s, selectedSite(), renderer)) ||
+    signature !== detailSignature
+  ) {
     detail();
     detailSignature = signature;
   }
@@ -604,6 +695,12 @@ function render(force = false) {
 }
 function inspect(p) {
   if (!p) return;
+  if (p.voyageRole && p.noticeAccepted) {
+    inspectVoyageSite(s, p.id);
+    save();
+    render(true);
+    return;
+  }
   if (needsNotice(s, p)) {
     openSiteIntroduction(p);
     return;
@@ -639,7 +736,8 @@ function inspect(p) {
       );
       return;
     }
-    if (!openBaseWelcome() && !(p.type === 'hut' && openCarpenter())) toast(r.text);
+    if (!openBaseWelcome() && !(p.type === 'hut' && openCarpenter()) && !noticeEligible(p))
+      toast(r.text);
   } else approachSite(p);
 }
 function selectSite(id) {
@@ -704,6 +802,34 @@ function gather(node) {
 }
 function update(dt) {
   if (!ready || document.hidden) return;
+  if (s.voyage?.travel) {
+    const arrived = advanceSailing(s, dt);
+    updateSailingOverlay();
+    if (arrived) {
+      activate(s);
+      revealAround(s, s.hero, 2.5);
+      save();
+      render(true);
+      dialog(
+        s.voyage.currentIsland === 'echo' ? 'Borostyán-sziget' : 'Újra otthon',
+        s.voyage.currentIsland === 'echo'
+          ? 'A hajód csendes öbölbe ér. A part mentén régi ösvény vezet a fák közé. A visszaút bármikor nyitva áll.'
+          : 'Az otthoni telepek megvártak. A munkák és a termelés folytatódtak, amíg távol voltál.',
+        [
+          {
+            label: 'Partra lépek',
+            run: () => {
+              if (s.voyage.currentIsland === 'echo') inspectVoyageSite(s, 'echo-landing');
+              $('storymodal').close();
+              save();
+              render(true);
+            },
+          },
+        ],
+      );
+    }
+    return;
+  }
   updateWorkers(s, dt);
   const paused = $('storymodal').open || $('modal').open;
   s.hero.action = 'idle';
@@ -967,7 +1093,7 @@ function openSiteIntroduction(p) {
     }
     return openBaseWelcome();
   }
-  const notice = siteNotice(p);
+  const notice = siteNotice(p, s);
   dialog(notice.title, notice.text, [
     {
       label: notice.button,
@@ -995,22 +1121,18 @@ function openCarpenter() {
   if (!carpenterWaiting(s)) return false;
   const base = s.adventure.sites.find((p) => p.type === 'hut');
   if (!base || Math.hypot(s.hero.x - base.x, s.hero.y - base.y) > 1.8) return false;
-  dialog(
-    'Egy ács a küszöbön',
-    '„A vihar megbontotta a házam tetejét. Ha hozol 3 deszkát és 8 követ, jobb munkapadot és vezetősínt készítek az általad már elindított fűrészműhelybe.”\n\nAz ács a házánál várja majd az anyagot. Az 1. szinten már működő műhelyt 2. szintre bővíti: ugyanannyi idő alatt 30%-kal több deszkát készít.',
-    [
-      {
-        label: 'Segítek rendbe hozni a házad',
-        run: () => {
-          if (introduceCarpenter(s)) {
-            save();
-            $('storymodal').close();
-            render(true);
-          }
-        },
+  dialog('Egy ács a küszöbön', carpenterSpeech(s), [
+    {
+      label: 'Segítek rendbe hozni a házad',
+      run: () => {
+        if (introduceCarpenter(s)) {
+          save();
+          $('storymodal').close();
+          render(true);
+        }
       },
-    ],
-  );
+    },
+  ]);
   return true;
 }
 function openBaseWelcome() {
@@ -1242,8 +1364,10 @@ function activate(next) {
   nearNotices.clear();
   camera.focus = { x: s.hero.x, y: s.hero.y };
   camera.x = camera.y = 0;
+  if (s.worldVersion === 5) camera.zoom = Math.min(camera.zoom, 0.98);
   camera.follow = true;
   closeSheet();
+  settleAway(s, Date.now());
   const caught = tick(s, Date.now(), false);
   produceOfflineWorkers(s, caught);
   save();
@@ -1252,7 +1376,7 @@ function activate(next) {
 $('settings').onclick = () => {
   drive = { x: 0, y: 0 };
   $('saveinfo').textContent =
-    `Játékverzió: 0.13 · Mentés: v${s.version}. ${s.archive ? 'A megőrzött szigeteid ugyanebben a mentésben vannak.' : 'Automatikus mentés ezen az eszközön.'}`;
+    `Játékverzió: 0.14 · Mentés: v${s.version}. ${s.archive ? 'A megőrzött szigeteid ugyanebben a mentésben vannak.' : 'Automatikus mentés ezen az eszközön.'}`;
   $('switchcampaign').textContent = s.archive
     ? 'Váltás a másik megőrzött szigetre'
     : 'Új kaland, a jelenlegi sziget megőrzésével';
@@ -1302,6 +1426,7 @@ function download(data, name) {
 }
 function migrationBackup() {
   return (
+    localStorage.getItem('szigetkert.backup.pre-v14-v9') ||
     localStorage.getItem('szigetkert.backup.pre-v13') ||
     localStorage.getItem('szigetkert.backup.pre-v12-v8') ||
     localStorage.getItem('szigetkert.backup.pre-simplification-v7') ||
@@ -1328,19 +1453,35 @@ $('import').onchange = async (e) => {
     if (f.size > 8000000) throw Error('Túl nagy mentés.');
     const rawImport = await f.text();
     const candidate = importGame(rawImport);
-    if (!confirm('Az import lecseréli az aktív mentést. Előtte exportáld a jelenlegit. Folytatod?'))
-      return;
-    if (
-      JSON.parse(rawImport).version <= 6 &&
-      !localStorage.getItem('szigetkert.backup.pre-simplification-v7')
-    )
-      localStorage.setItem('szigetkert.backup.pre-simplification-v7', rawImport);
-    saveOK = true;
-    activate(candidate);
     $('modal').close();
-    if (!s.adventure.introSeen || !s.adventure.tutorialSeen) openIntro();
-    else openBaseWelcome();
-    toast('A szigeted betöltődött.');
+    dialog(
+      'Játékállás betöltése',
+      'A kiválasztott mentés lecseréli a mostani játékállást. A jelenlegi állásról előtte helyi biztonsági másolat készül.',
+      [
+        { label: 'Mégse', run: () => $('storymodal').close() },
+        {
+          label: 'Betöltöm a mentést',
+          run: () => {
+            try {
+              localStorage.setItem('szigetkert.backup.pre-import', JSON.stringify(s));
+              if (
+                JSON.parse(rawImport).version <= 8 &&
+                !localStorage.getItem('szigetkert.backup.pre-v14-v9')
+              )
+                localStorage.setItem('szigetkert.backup.pre-v14-v9', rawImport);
+              saveOK = true;
+              $('storymodal').close();
+              activate(candidate);
+              if (!s.adventure.introSeen || !s.adventure.tutorialSeen) openIntro();
+              else openBaseWelcome();
+              toast('A szigeted betöltődött.');
+            } catch (error) {
+              toast('A mentés nem tölthető be: ' + error.message);
+            }
+          },
+        },
+      ],
+    );
   } catch (e) {
     toast(e.message);
   } finally {
@@ -1368,7 +1509,7 @@ function keyDrive() {
   };
 }
 window.addEventListener('keydown', (e) => {
-  if ($('modal').open || $('storymodal').open) return;
+  if ($('modal').open || $('storymodal').open || s.voyage?.travel) return;
   if (e.target?.closest?.('input, textarea, select, button, [contenteditable]')) return;
   if (['w', 'a', 's', 'd', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
     e.preventDefault();

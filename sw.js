@@ -1,4 +1,4 @@
-const CACHE = 'szigetkert-shell-v13-discoveries-3';
+const CACHE = 'szigetkert-shell-v14-home-and-sea-7';
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'ACTIVATE_UPDATE') self.skipWaiting();
 });
@@ -16,9 +16,17 @@ self.addEventListener('install', (event) =>
         );
       const description = await (await cache.match('./assets/frames.json')).json();
       if (
-        !['village', 'nature', 'props', 'expedition', 'workshops', 'items'].every(
-          (name) => typeof description[name]?.src === 'string',
-        )
+        ![
+          'village',
+          'nature',
+          'props',
+          'expedition',
+          'workshops',
+          'items',
+          'voyage',
+          'closedDock',
+          'beacon',
+        ].every((name) => typeof description[name]?.src === 'string')
       )
         throw Error('Incomplete graphics package: upload the full assets folder.');
       await cache.add('./offline-files.json');
